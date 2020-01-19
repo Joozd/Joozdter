@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".ui.PdfParserActivity">
+
+    <TextView
+            android:id="@+id/connecttingToServerTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="64dp"
+            android:text="@string/connectingToServer"
+            app:layout_constraintBottom_toTopOf="@+id/receivingDataText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+            android:id="@+id/connectedCheck"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✅"
+            android:visibility="invisible"
+            app:layout_constraintStart_toEndOf="@+id/connecttingToServerTextView"
+            app:layout_constraintTop_toTopOf="@+id/connecttingToServerTextView" />
+
+    <TextView
+            android:id="@+id/receivingDataText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="@string/receivingData"
+            app:layout_constraintBottom_toTopOf="@+id/updatingCalendarText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/connecttingToServerTextView" />
+
+    <TextView
+            android:id="@+id/receivingDataCheck"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✅"
+            android:visibility="invisible"
+            app:layout_constraintStart_toEndOf="@+id/receivingDataText"
+            app:layout_constraintTop_toTopOf="@+id/receivingDataText" />
+
+    <TextView
+            android:id="@+id/updatingCalendarText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="64dp"
+            android:text="@string/addingToCalendar"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/receivingDataText" />
+
+    <TextView
+            android:id="@+id/doneCheck"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✅"
+            android:visibility="invisible"
+            app:layout_constraintStart_toEndOf="@+id/updatingCalendarText"
+            app:layout_constraintTop_toTopOf="@+id/updatingCalendarText" />
+</androidx.constraintlayout.widget.ConstraintLayout>
