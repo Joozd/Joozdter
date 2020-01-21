@@ -14,6 +14,10 @@ import android.util.Log
 import android.view.View
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.itextpdf.text.pdf.PdfReader
+import com.itextpdf.text.pdf.parser.LocationTextExtractionStrategy
+import com.itextpdf.text.pdf.parser.PdfTextExtractor
+import com.itextpdf.text.pdf.parser.SimpleTextExtractionStrategy
 import com.jakewharton.threetenabp.AndroidThreeTen
 import kotlinx.android.synthetic.main.activity_pdf_parser.*
 import nl.joozd.joozdter.R
@@ -33,16 +37,22 @@ import java.net.UnknownHostException
 import java.util.concurrent.CountDownLatch
 
 class PdfParserActivity : AppCompatActivity() {
+    companion object {
+        const val TAG = "PDFParserActivity"
+    }
+
     private val initialized = CountDownLatch(1)
     private val calendarReady = CountDownLatch(1)
-    private val calendarUpdateComplete = CountDownLatch (2)
+    private val calendarUpdateComplete = CountDownLatch(2)
     private lateinit var sharedPref: SharedPreferences
     private var working = true
 
-    override fun onRequestPermissionsResult(requestCode : Int ,
-                                            permissions: Array<String>,
-                                            grantResults: IntArray) {
-    recreate()
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        recreate()
     }
 
 
@@ -51,12 +61,13 @@ class PdfParserActivity : AppCompatActivity() {
         AndroidThreeTen.init(this)
 
         sharedPref = this.getSharedPreferences(
-            getString(R.string.preference_file_key), Context.MODE_PRIVATE)
+            getString(R.string.preference_file_key), Context.MODE_PRIVATE
+        )
 
         val calendarName = sharedPref.getString(SharedPrefKeys.PICKED_CALENDAR, "NOT FOUND!!!!!!1")
         val shareName = sharedPref.getBoolean(SharedPrefKeys.SHARE_NAME, false)
         if (calendarName == "NOT FOUND!!!!!!1") {
-            alert ("No calendar picked, run app normally to pick one") {
+            alert("No calendar picked, run app normally to pick one") {
                 okButton {
                     finish()
                 }
@@ -64,7 +75,8 @@ class PdfParserActivity : AppCompatActivity() {
         }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) {
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR), 0
@@ -74,8 +86,8 @@ class PdfParserActivity : AppCompatActivity() {
             doAsync {
                 calendarHandler.initialize()
                 calendarHandler.activeCalendar = calendarHandler.findCalendarByName(calendarName)
-                if (calendarHandler.activeCalendar == null){
-                    runOnUiThread{
+                if (calendarHandler.activeCalendar == null) {
+                    runOnUiThread {
                         longToast("problem with picked calendar, run app normally to pick one")
                         finish()
                     }
@@ -94,7 +106,7 @@ class PdfParserActivity : AppCompatActivity() {
                 try {
                     server = Comms()
                     initialized.countDown()
-                }catch (he: UnknownHostException){
+                } catch (he: UnknownHostException) {
                     val exceptionString = "An exception 11 occurred:\n ${he.printStackTrace()}"
                     Log.e(javaClass.simpleName, exceptionString, he)
                     working = false
@@ -103,11 +115,11 @@ class PdfParserActivity : AppCompatActivity() {
                             okButton {}
                         }.show()
                     }
-                }catch (ioe: IOException){
+                } catch (ioe: IOException) {
                     val exceptionString = "An exception 12 occurred:\n ${ioe.printStackTrace()}"
                     Log.e(javaClass.simpleName, exceptionString, ioe)
                     working = false
-                } catch (ce: ConnectException){
+                } catch (ce: ConnectException) {
                     val exceptionString = "An exception 13 occurred:\n ${ce.printStackTrace()}"
                     Log.e(javaClass.simpleName, exceptionString, ce)
                     working = false
@@ -117,13 +129,13 @@ class PdfParserActivity : AppCompatActivity() {
                         }.show()
 
                     }
-                }catch (se: SocketException){
+                } catch (se: SocketException) {
                     val exceptionString = "An exception 14 occurred:\n ${se.printStackTrace()}"
                     Log.e(javaClass.simpleName, exceptionString, se)
                     working = false
                 }
             }
-            connecttingToServerTextView.setTypeface (null, Typeface.BOLD)
+            connecttingToServerTextView.setTypeface(null, Typeface.BOLD)
             doAsync {
                 initialized.await()
                 runOnUiThread {
@@ -131,8 +143,8 @@ class PdfParserActivity : AppCompatActivity() {
                 }
             }
             intent?.let {
-                Log.d("PdfParserActivity", intent.action)
-                Log.d("PdfParserActivity", intent.type)
+                Log.d("PdfParserActivity", intent.action ?: "intent.action = null")
+                Log.d("PdfParserActivity", intent.type ?: "intent.type = null")
                 (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
                     val inputStream = try {
                         /*
@@ -145,59 +157,77 @@ class PdfParserActivity : AppCompatActivity() {
                         Log.e("PdfParserActivity", "File not found.")
                         return
                     }
+                    if (inputStream == null) {
+                        Log.e(TAG, "Inputstream is null")
+                    }
+
+
+                    /**
+                     * FROM HERE PDFREADER TEST
+                     */
+
+
+                    val reader = PdfReader(inputStream)
+                    Log.d(TAG, "#######################################################")
+                    Log.d(TAG, "reader has ${reader.numberOfPages} pages")
+                    Log.d(TAG, "extracted text w/ strategy LocationTextExtractionStrategy:\n")
+                    Log.d(TAG, PdfTextExtractor.getTextFromPage(reader, 1, LocationTextExtractionStrategy()))
+                    Log.d(TAG, "\n\nextracted text w/ strategy SimpleTextExtractionStrategy:\n")
+                    Log.d(TAG, PdfTextExtractor.getTextFromPage(reader, 1, SimpleTextExtractionStrategy()))
+                    Log.d(TAG, "#######################################################")
+
+
+                    /**
+                     * TO HERE PDFREADER TEST
+                     */
+/*
                     doAsync {
+
                         initialized.await()
                         runOnUiThread {
-                            receivingDataText.setTypeface (null, Typeface.BOLD)
+                            receivingDataText.setTypeface(null, Typeface.BOLD)
                         }
                         // TODO make some loading twirly thing
-                            val reply = try {
-                                server.sendPdfRoster(inputStream.toByteArray(), MetaData(sharedPref.getBoolean(SharedPrefKeys.SHARE_NAME, false)))
-                            }catch (he: UnknownHostException) {
-                                val exceptionString =
-                                    "An exception 11 occurred:\n ${he.printStackTrace()}"
-                                Log.e(javaClass.simpleName, exceptionString, he)
-                                runOnUiThread {
-                                    alert(getString(R.string.hostNotFound)) {
-                                        okButton {}
-                                    }.show()
-                                }
-                                emptyList<Day>()
-                            }catch (exc: Exception) {   // catch any other exception
-                                runOnUiThread {
-                                    alert(getString(R.string.errorParsingRoster)) {
-                                        okButton {}
-                                    }.show()
-                                }
-                                emptyList<Day>()
+                        val reply = try {
+                            server.sendPdfRoster(
+                                inputStream!!.toByteArray(),
+                                MetaData(
+                                    sharedPref.getBoolean(
+                                        SharedPrefKeys.SHARE_NAME,
+                                        false
+                                    )
+                                )
+                            )
+                        } catch (he: UnknownHostException) {
+                            val exceptionString =
+                                "An exception 11 occurred:\n ${he.printStackTrace()}"
+                            Log.e(javaClass.simpleName, exceptionString, he)
+                            runOnUiThread {
+                                alert(getString(R.string.hostNotFound)) {
+                                    okButton {}
+                                }.show()
                             }
-/*                            }catch (ioe: IOException){
-                                val exceptionString = "An exception 12 occurred:\n ${ioe.printStackTrace()}"
-                                Log.e(javaClass.simpleName, exceptionString, ioe)
-                                emptyList<Day>()
-                            } catch (ce: ConnectException){
-                                val exceptionString = "An exception 13 occurred:\n ${ce.printStackTrace()}"
-                                Log.e(javaClass.simpleName, exceptionString, ce)
-                                emptyList<Day>()
-                            }catch (se: SocketException){
-                                val exceptionString = "An exception 14 occurred:\n ${se.printStackTrace()}"
-                                Log.e(javaClass.simpleName, exceptionString, se)
-                                emptyList<Day>()
+                            emptyList<Day>()
+                        } catch (exc: Exception) {   // catch any other exception
+                            runOnUiThread {
+                                alert(getString(R.string.errorParsingRoster)) {
+                                    okButton {}
+                                }.show()
                             }
- */
+                            emptyList<Day>()
+                        }
 
 
                         server.close()
-                        inputStream.close()
-                        if (reply == null){
+                        inputStream?.close()
+                        if (reply == null) {
                             working = false
                             runOnUiThread {
                                 alert(getString(R.string.errorWrongFile)) {
                                     okButton {}
                                 }.show()
                             }
-                        }
-                        else {
+                        } else {
                             if (reply.isNotEmpty()) {
                                 Log.d("pdfParserActivity", "werkt")
                                 // TODO put days into calendar
@@ -222,18 +252,19 @@ class PdfParserActivity : AppCompatActivity() {
 
 
                             // get all events on those dates made by me
-                            val hotelEvent = calendarHandler.getHotelEvent(receivedDates.min()!!)
+                            val hotelEvent =
+                                calendarHandler.getHotelEvent(receivedDates.min()!!)
                             runOnUiThread {
                                 updatingCalendarText.setTypeface(null, Typeface.BOLD)
                             }
-                            receivedDates.forEach { i ->  // don't do this async or you ill delete all fresh entries as well
+                            receivedDates.forEach { i ->
+                                // don't do this async or you ill delete all fresh entries as well
                                 // get events already in calendar on a received day
                                 val todaysEvents = calendarHandler.getEventsStartingOn(i)
                                 // delete all those events
                                 calendarHandler.deleteEvents(todaysEvents)
                             }
                             calendarUpdateComplete.countDown()
-
 
 
                             // enter new events from reply in calendar
@@ -251,13 +282,16 @@ class PdfParserActivity : AppCompatActivity() {
                             }
                         }
                     } // doAsync
+
+ */
                 }
             }
-        }
-    } // oncreate
+        } // oncreate
+    }
 
     override fun onBackPressed() {
         if (working) this.moveTaskToBack(true)
         else super.onBackPressed()
     }
 } // class
+

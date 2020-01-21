@@ -21,7 +21,6 @@ import nl.joozd.joozdter.ui.fragments.NewUserFragment
 import org.jetbrains.anko.alert
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.okButton
-import org.jetbrains.anko.toast
 
 class MainActivity : AppCompatActivity() {
 
