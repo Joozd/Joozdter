@@ -5,21 +5,16 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.graphics.Typeface
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Parcelable
 import android.util.Log
-import android.view.View
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.jakewharton.threetenabp.AndroidThreeTen
-import kotlinx.android.synthetic.main.activity_pdf_parser.*
 import nl.joozd.joozdter.R
 import nl.joozd.joozdter.calendar.CalendarHandler
-import nl.joozd.joozdter.calendar.CalendarHandlerOld
-import nl.joozd.joozdter.data.Event
 
 import nl.joozd.joozdter.data.SharedPrefKeys
 import nl.joozd.joozdter.utils.parseEvents

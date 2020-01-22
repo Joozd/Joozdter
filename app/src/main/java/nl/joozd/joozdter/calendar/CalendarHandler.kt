@@ -9,15 +9,12 @@ import android.provider.CalendarContract
 import android.util.Log
 import androidx.core.content.ContextCompat
 import nl.joozd.joozdter.data.Event
-import nl.joozd.joozdter.data.EventOld
-import nl.joozd.joozdter.data.EventType
 import nl.joozd.joozdter.data.SharedPrefKeys
 import nl.joozd.klcrosterparser.Activities
 import org.jetbrains.anko.doAsync
 import org.threeten.bp.Instant
 import org.threeten.bp.LocalDate
 import org.threeten.bp.ZoneId
-import org.threeten.bp.format.DateTimeFormatter
 import org.threeten.bp.temporal.ChronoUnit
 
 class CalendarHandler(private val context: Context){
@@ -114,10 +111,10 @@ class CalendarHandler(private val context: Context){
 
     fun findCalendarByName(name: String?): CalendarDescriptor? = calendarsList.singleOrNull{it.name == name}
 
-    fun getEventsTouching(dateInstant: Instant): List<EventOld> {
+    fun getEventsTouching(dateInstant: Instant): List<Event> {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
             != PackageManager.PERMISSION_GRANTED) return emptyList()
-        val foundEvents: MutableList<EventOld> = mutableListOf()
+        val foundEvents: MutableList<Event> = mutableListOf()
 
         activeCalendar?.let {
             val uri: Uri = CalendarContract.Events.CONTENT_URI
@@ -128,12 +125,10 @@ class CalendarHandler(private val context: Context){
             val cur: Cursor = context.contentResolver.query(uri, EVENT_PROJECTION, selection, selectionArgs, null)!!
             while (cur.moveToNext()) {
                 if (cur.getLong(EVENT_CALENDAR_ID_INDEX) == it.calID){
-                    foundEvents.add(EventOld(cur.getString(EVENT_TITLE_INDEX),
+                    foundEvents.add(Event(cur.getString(EVENT_TITLE_INDEX),
                         cur.getString(EVENT_TITLE_INDEX),
-                        Instant.ofEpochMilli(cur.getLong(EVENT_DTSTART_INDEX)).atZone(ZoneId.systemDefault()).toLocalDate().format(
-                            DateTimeFormatter.ISO_DATE_TIME),
-                        Instant.ofEpochMilli(cur.getLong(EVENT_DTEND_INDEX)).atZone(ZoneId.systemDefault()).toLocalDate().format(
-                            DateTimeFormatter.ISO_DATE_TIME),
+                        Instant.ofEpochMilli(cur.getLong(EVENT_DTSTART_INDEX)),
+                        Instant.ofEpochMilli(cur.getLong(EVENT_DTEND_INDEX)),
                         cur.getString(EVENT_EVENT_LOCATION_INDEX),
                         "",
                         cur.getLong(EVENT_ID_INDEX)))
