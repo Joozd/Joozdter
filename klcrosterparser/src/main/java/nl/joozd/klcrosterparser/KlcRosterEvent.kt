@@ -11,4 +11,6 @@ import org.threeten.bp.Instant
  * @param extraMessage: Extra message on roster, eg. "To c/m: Three-yearly recurrent"
  */
 
-data class KlcRosterEvent(val type: String, val start: Instant, val end: Instant, val description: String, val extraMessage: String? = null)
+data class KlcRosterEvent(val type: String, val start: Instant, val end: Instant, val description: String, val extraMessage: String? = null){
+    override fun toString() = "Event type $type\n$description, starts at $start, ends at $end. Extramessage is $extraMessage\n"
+}

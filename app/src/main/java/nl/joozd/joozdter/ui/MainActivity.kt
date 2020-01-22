@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.android.synthetic.main.activity_main.*
 import nl.joozd.joozdter.R
 import nl.joozd.joozdter.calendar.CalendarDescriptor
-import nl.joozd.joozdter.calendar.CalendarHandler
+import nl.joozd.joozdter.calendar.CalendarHandlerOld
 import nl.joozd.joozdter.data.SharedPrefKeys
 import nl.joozd.joozdter.ui.adapters.CalendarPickerAdapter
 import nl.joozd.joozdter.ui.fragments.NewUserFragment
@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var sharedPref: SharedPreferences
-    private lateinit var calendarHandler: CalendarHandler
+    private lateinit var calendarHandler: CalendarHandlerOld
     private val calendarPickerAdapter = CalendarPickerAdapter(emptyList()) { getCalendar(it) }
     private var showHalpListener: ShowMenuListener? = null
 
@@ -135,8 +135,8 @@ class MainActivity : AppCompatActivity() {
             calendarPicker.layoutManager = LinearLayoutManager(this)
             calendarPicker.adapter = calendarPickerAdapter
 
-            calendarHandler = CalendarHandler(this@MainActivity)
-            calendarHandler.onInit = CalendarHandler.OnInit {
+            calendarHandler = CalendarHandlerOld(this@MainActivity)
+            calendarHandler.onInit = CalendarHandlerOld.OnInit {
                 runOnUiThread {
                     calendarPickerAdapter.updateData(calendarHandler.calendarsList)
                     pickedCalendarText.text = calendarHandler.findCalendarByName(

@@ -9,4 +9,6 @@ data class RosterDay(val date: LocalDate, val events: List<KlcRosterEvent>, val 
     val endOfDay: Instant by lazy {
         LocalDateTime.of(date.plusDays(1), LocalTime.MIDNIGHT).atZone(ZoneOffset.UTC).toInstant()
     }
+
+    override fun toString() = "Date: $date, events: $events, extraInfo: $extraInfo"
 }

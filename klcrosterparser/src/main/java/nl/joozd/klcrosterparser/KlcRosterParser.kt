@@ -48,7 +48,7 @@ class KlcRosterParser(inputStream: InputStream) {
         val checkInRegex = "C/I\\s[A-Z]{3}\\s\\d{4}".toRegex()
         // eg. C/I TRN 0435
 
-        val checkOutRegex = "C/O\\s[A-Z]{3}\\s\\d{4}\\s\\[\\d{2}:\\d{2}]".toRegex()
+        val checkOutRegex = "C/O\\s\\d{4}\\s[A-Z]{3}\\s\\[FDP\\s\\d{2}:\\d{2}]".toRegex()
         // eg. C/O 1040 TRN [FDP 04:50]
 
         val flightRegex = "($carrier)\\s\\d+\\sR?\\s?[A-Z]{3}\\s\\d{4}\\s\\d{4}\\s[A-Z]{3}".toRegex()
@@ -65,6 +65,7 @@ class KlcRosterParser(inputStream: InputStream) {
 
     private val legend = mutableMapOf<String, String>()
     private val hotels = mutableMapOf<String, String>()
+    var pageWithHotelsTEMP = ""
 
     private val reader = PdfReader(inputStream)
     @Suppress("MemberVisibilityCanBePrivate")
@@ -78,10 +79,10 @@ class KlcRosterParser(inputStream: InputStream) {
     }
     val seemsValid = header.isNotEmpty()
 
-    private val text: String by lazy{
+    val text: String by lazy{
         var completeString = ""
         repeat(reader.numberOfPages){pageNumber ->
-            val pageText = PdfTextExtractor.getTextFromPage(reader, pageNumber, SimpleTextExtractionStrategy()).drop(header.length).trim()
+            val pageText = PdfTextExtractor.getTextFromPage(reader, pageNumber+1, SimpleTextExtractionStrategy()).drop(header.length).trim()
             completeString += pageText
 
             //fill legend map
@@ -95,6 +96,7 @@ class KlcRosterParser(inputStream: InputStream) {
 
             //fill hotels map
             if (hotelsMarker in pageText){
+                pageWithHotelsTEMP = pageText
                 val hotelsText = if (hotelsEndMarker in pageText)
                     pageText.slice(pageText.indexOf(hotelsMarker) until pageText.indexOf(hotelsEndMarker)).split("\n").drop(1)
                 else
@@ -137,7 +139,7 @@ class KlcRosterParser(inputStream: InputStream) {
             val dayString: String = foundDay.value
             val dayNumber = dayString.filter{it.isDigit()}.toInt()
             // remove the day marker:
-            workingText = workingText.drop(dayString.length).trim()
+            workingText = workingText.drop(workingText.indexOf(dayString)+dayString.length).trim()
 
             // get the start of the next day, if any; also sets condition for @fillADay loop
             foundDay = dayRegEx.find(workingText)
@@ -145,13 +147,15 @@ class KlcRosterParser(inputStream: InputStream) {
             // if there is another day, current text is everything until that, take it from the workingText:
             //if there isn't take everything
             val todaysText =
-            if (foundDay != null)
-                workingText.slice(0 until workingText.indexOf(foundDay.value))
-            else workingText
+                if (foundDay != null)
+                    workingText.slice(0 until workingText.indexOf(foundDay.value))
+                else workingText
+            // todaysExtraInfo = todaysText
+
             workingText.drop(todaysText.length)
 
             // activeDate is the day this cycle of @fillADay is filling
-            val activeDate = if (dayNumber > startDate.dayOfMonth)
+            val activeDate = if (dayNumber >= startDate.dayOfMonth)
                     startDate.withDayOfMonth(dayNumber)
                 else {
                 startDate.withDayOfMonth(dayNumber).plusMonths(1)
@@ -189,7 +193,7 @@ class KlcRosterParser(inputStream: InputStream) {
              * Other gets added as extraMessage to last Event found, if any, or discarded
              */
 
-            var lines = todaysText.split("\n")
+            var lines = todaysText.split("\n").map{it.trim()}
             fillEvents@while (lines.isNotEmpty()){
                 val line = lines[0]
                 lines = lines.drop(1)
@@ -207,16 +211,25 @@ class KlcRosterParser(inputStream: InputStream) {
                         // edit previous hotel endtime to end now
 
                         //keep going back untill a date with a hotel in it is found
-                        var yesterday = RosterDay(activeDate, emptyList(), "")
-                        while (yesterday.events.none { it.type == Activities.HOTEL }) {
-                            yesterday = workingList.first { it.date == yesterday.date.minusDays(1) }
+                        var yesterday: RosterDay? = RosterDay(activeDate, emptyList(), "")
+                        innerWhile@while (yesterday!!.events.none { it.type == Activities.HOTEL }) {
+                            yesterday = workingList.firstOrNull { it.date == yesterday?.date?.minusDays(1) }
+                            if (yesterday == null) break@innerWhile
                         }
-                        val yesterdaysUpdatedEvents = yesterday.events.map{
-                            if (it.type == Activities.HOTEL) it.copy(end = startTime)
-                            else it.copy()
+                        yesterday?.let {
+                            val yesterdaysUpdatedEvents = it.events.map {
+                                if (it.type == Activities.HOTEL) it.copy(end = startTime)
+                                else it.copy()
+                            }
+                            workingList.remove(yesterday)
+                            workingList.add(
+                                RosterDay(
+                                    yesterday.date,
+                                    yesterdaysUpdatedEvents,
+                                    yesterday.extraInfo
+                                )
+                            )
                         }
-                        workingList.remove(yesterday)
-                        workingList.add(RosterDay(yesterday.date, yesterdaysUpdatedEvents, yesterday.extraInfo))
                     }
 
                     standbyRegEx.find(line) != null -> {
@@ -235,28 +248,28 @@ class KlcRosterParser(inputStream: InputStream) {
                         val nexttime = getNextActivityStartTimeInt(lines)
                         val startTime = LocalDateTime.of(activeDate, LocalTime.of(time/100, time%100)).atZone(ZoneOffset.UTC).toInstant()
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(nexttime/100, nexttime%100)).atZone(ZoneOffset.UTC).toInstant()
-                        val description = words[0]+words[1]
+                        val description = "${words[0]} ${words[1]}"
                         todaysEvents.add(KlcRosterEvent(Activities.CHECKIN, startTime, endTime, description))
                     }
 
                     flightRegex.find(line) != null -> {
-                        val words = checkInRegex.find(line)!!.value.split(" ")
-                        val numbers = checkInRegex.find(line)!!.value.filter{it in "0123456789 "}.split(" ")
-                        val time = numbers[1].filter{it.isDigit()}.toInt()
-                        val nexttime = numbers[2].filter{it.isDigit()}.toInt()
+                        val words = flightRegex.find(line)!!.value.split(" ").filter{it != "R"}
+                        val numbers = flightRegex.find(line)!!.value.filter{it in "0123456789 "}.trim().replace("\\s+".toRegex(), " ").split(" ").map{it.toInt()}
+                        val time = numbers[1]
+                        val nexttime = numbers[2]
                         val startTime = LocalDateTime.of(activeDate, LocalTime.of(time/100, time%100)).atZone(ZoneOffset.UTC).toInstant()
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(nexttime/100, nexttime%100)).atZone(ZoneOffset.UTC).toInstant()
 
                         val orig = words[2]
                         val dest = words[5]
                         val description = "${words[0]}${words[1]} $orig -> $dest" // KL1234 AMS -> BLQ
-                        val extraInfo = line.drop(checkInRegex.find(line)!!.value.length) // anything after DEST is extra info, usually just a/c type
+                        val extraInfo = line.drop(flightRegex.find(line)!!.value.length) // anything after DEST is extra info, usually just a/c type
 
                         todaysEvents.add(KlcRosterEvent(Activities.FLIGHT, startTime, endTime, description, extraInfo))
                     }
 
                     checkOutRegex.find(line) != null -> {
-                        val numbers = checkInRegex.find(line)!!.value.filter{it in "0123456789 "}.split(" ")
+                        val numbers = checkOutRegex.find(line)!!.value.filter{it in "0123456789 "}.trim().replace("\\s+".toRegex(), " ").split(" ")
                         val time = numbers[0].toInt()
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(time/100, time%100)).atZone(ZoneOffset.UTC).toInstant()
                         val startTime = todaysEvents.maxBy { it.end }?.end ?: endTime.minusSeconds(defaultCheckoutTimeInSeconds)
@@ -266,25 +279,52 @@ class KlcRosterParser(inputStream: InputStream) {
 
                         while (lines.isNotEmpty()){ // everything after checkOut is either Hotel, CLICK or extra info
                             @Suppress("NAME_SHADOWING") val line = lines[0]
-                            lines.drop(1)
-                            val words = line.split(" ")
-                            when{
-                                words[0][0] == 'H' && words[0][1].isDigit() && words[0].length == 2 -> { // line is Hotel
-                                    val hotelEndTime = LocalDateTime.of(activeDate.plusDays(1), LocalTime.MIDNIGHT).atZone(ZoneOffset.UTC).toInstant() // hotel ends at midnight. Fix that on following pickup!
-                                    val hotelDescription = hotels[words[0]] ?: words [0]
-                                    todaysEvents.add(KlcRosterEvent(Activities.HOTEL,
-                                        endTime, hotelEndTime, hotelDescription))
-                                }
-                                words[0] == CLICK -> {
-                                    @Suppress("NAME_SHADOWING") val words = line.split(" ")
-                                    @Suppress("NAME_SHADOWING") val numbers = line.filter{it in "0123456789 "}.split(" ").map{it.toInt()}
-                                    @Suppress("NAME_SHADOWING") val startTime = LocalDateTime.of(activeDate, LocalTime.of(numbers[0]/100, numbers[0]%100)).atZone(ZoneOffset.UTC).toInstant()
-                                    @Suppress("NAME_SHADOWING") val endTime = LocalDateTime.of(activeDate, LocalTime.of(numbers[1]/100, numbers[1]%100)).atZone(ZoneOffset.UTC).toInstant()
-                                    todaysEvents.add(KlcRosterEvent(Activities.CLICK, startTime, endTime, line))
-                                }
-                                else ->{ // line is extra info
-                                    if (todaysExtraInfo.isNotEmpty()) todaysExtraInfo += "\n"
-                                    todaysExtraInfo += line
+                            lines = lines.drop(1)
+                            val words = line.trim().replace("\\s+".toRegex(), " ").split(" ").filter{it.isNotEmpty()}
+                            if (words.isNotEmpty()) {
+                                when {
+                                    words[0][0] == 'H' && words[0][1].isDigit() && words[0].length == 2 -> { // line is Hotel
+                                        val hotelEndTime = LocalDateTime.of(
+                                            activeDate.plusDays(1),
+                                            LocalTime.MIDNIGHT
+                                        ).atZone(ZoneOffset.UTC)
+                                            .toInstant() // hotel ends at midnight. Fix that on following pickup!
+                                        val hotelDescription = hotels[words[0]] ?: words[0]
+                                        todaysEvents.add(
+                                            KlcRosterEvent(
+                                                Activities.HOTEL,
+                                                endTime, hotelEndTime, hotelDescription
+                                            )
+                                        )
+                                    }
+                                    words[0] == CLICK -> {
+                                        @Suppress("NAME_SHADOWING") val words = line.split(" ")
+                                        @Suppress("NAME_SHADOWING") val numbers =
+                                            line.filter { it in "0123456789 " }.trim()
+                                                .replace("\\s+".toRegex(), " ").split(" ")
+                                                .map { it.toInt() }
+                                        @Suppress("NAME_SHADOWING") val startTime =
+                                            LocalDateTime.of(
+                                                activeDate,
+                                                LocalTime.of(numbers[0] / 100, numbers[0] % 100)
+                                            ).atZone(ZoneOffset.UTC).toInstant()
+                                        @Suppress("NAME_SHADOWING") val endTime = LocalDateTime.of(
+                                            activeDate,
+                                            LocalTime.of(numbers[1] / 100, numbers[1] % 100)
+                                        ).atZone(ZoneOffset.UTC).toInstant()
+                                        todaysEvents.add(
+                                            KlcRosterEvent(
+                                                Activities.CLICK,
+                                                startTime,
+                                                endTime,
+                                                line
+                                            )
+                                        )
+                                    }
+                                    else -> { // line is extra info
+                                        if (todaysExtraInfo.isNotEmpty()) todaysExtraInfo += "\n"
+                                        todaysExtraInfo += line
+                                    }
                                 }
                             }
                         }
@@ -299,25 +339,45 @@ class KlcRosterParser(inputStream: InputStream) {
 
                         while (lines.isNotEmpty()) { // everything after sim is either actual sim or extra info
                             @Suppress("NAME_SHADOWING") val line = lines[0]
-                            lines.drop(1)
-                            val words = line.split(" ")
+                            lines = lines.drop(1)
+                            val words = line.trim().replace("\\s+".toRegex(), " ").split(" ").filter{it.isNotEmpty()}
+                            if (words.isEmpty()) continue
 
-                            if (words[0][0].isUpperCase() && words[0][1].isDigit() && words[0].length == 2) { // line is actual sim
-                                @Suppress("NAME_SHADOWING") val relevantTimes = line.filter{it in "0123456789 "}.split(" ").map{it.toInt()}.drop(1)
-                                @Suppress("NAME_SHADOWING") val startTime = LocalDateTime.of(activeDate, LocalTime.of(relevantTimes[0]/100, relevantTimes[0]%100)).atZone(ZoneOffset.UTC).toInstant()
-                                @Suppress("NAME_SHADOWING") val endTime = LocalDateTime.of(activeDate, LocalTime.of(relevantTimes[1]/100, relevantTimes[1]%100)).atZone(ZoneOffset.UTC).toInstant()
-                                todaysEvents.add(KlcRosterEvent(Activities.ACTUALSIM, startTime, endTime, words[0]))
-                            }
-                            else {
-                                if (todaysExtraInfo.isNotEmpty()) todaysExtraInfo += "\n"
-                                todaysExtraInfo += line
-                            }
+                                if (words[0][0].isUpperCase() && words[0][1].isDigit() && words[0].length == 2) { // line is actual sim
+                                    @Suppress("NAME_SHADOWING") val relevantTimes =
+                                        line.filter { it in "0123456789 " }.trim()
+                                            .replace("\\s+".toRegex(), " ").split(" ")
+                                            .map { it.toInt() }.drop(1)
+                                    @Suppress("NAME_SHADOWING") val startTime = LocalDateTime.of(
+                                        activeDate,
+                                        LocalTime.of(relevantTimes[0] / 100, relevantTimes[0] % 100)
+                                    ).atZone(ZoneOffset.UTC).toInstant()
+                                    @Suppress("NAME_SHADOWING") val endTime = LocalDateTime.of(
+                                        activeDate,
+                                        LocalTime.of(relevantTimes[1] / 100, relevantTimes[1] % 100)
+                                    ).atZone(ZoneOffset.UTC).toInstant()
+                                    todaysEvents.add(
+                                        KlcRosterEvent(
+                                            Activities.ACTUALSIM,
+                                            startTime,
+                                            endTime,
+                                            words[0]
+                                        )
+                                    )
+                                } else {
+
+
+                                    if (todaysExtraInfo.isNotEmpty()) todaysExtraInfo += "\n"
+                                    todaysExtraInfo += line
+                                }
+
+
                         }
                     }
 
                     otherRegex.find(line) != null -> {
                         val words = line.split(" ")
-                        val numbers = line.filter{it in "0123456789 "}.split(" ").map{it.toInt()}.drop(1)
+                        val numbers = line.filter{it in "0123456789 "}.trim().replace("\\s+".toRegex(), " ").split(" ").map{it.toInt()}.drop(1)
                         val startTime = LocalDateTime.of(activeDate, LocalTime.of(numbers[0]/100, numbers[0]%100)).atZone(ZoneOffset.UTC).toInstant()
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(numbers[1]/100, numbers[1]%100)).atZone(ZoneOffset.UTC).toInstant()
 
@@ -338,7 +398,7 @@ class KlcRosterParser(inputStream: InputStream) {
             }
             workingList.add(RosterDay(activeDate, todaysEvents, todaysExtraInfo))
         }
-        workingList
+        workingList.toList()
     }
 
 

@@ -5,13 +5,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
-import androidx.core.content.ContextCompat.getColor
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.item_calendar_picker.*
 import nl.joozd.joozdter.R
 import nl.joozd.joozdter.calendar.CalendarDescriptor
-import nl.joozd.joozdter.calendar.CalendarHandler
 import nl.joozd.joozdter.extensions.ctx
 
 class CalendarPickerAdapter(private var calendars: List<CalendarDescriptor>,

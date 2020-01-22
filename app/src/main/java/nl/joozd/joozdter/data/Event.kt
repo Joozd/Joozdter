@@ -1,24 +1,23 @@
 package nl.joozd.joozdter.data
 
-import org.threeten.bp.Duration
 import org.threeten.bp.Instant
-import org.threeten.bp.LocalDateTime
-import org.threeten.bp.temporal.ChronoUnit
+import org.threeten.bp.Duration
 
-// event_type as in EventTypes object
-// description: any string
-// start_time: ISO start time string without "Z"
-// end_time: same
-// extra_data: any string
-// _id: Long, to be used for extracting events from calendar
+/**
+ * Event that will be put into calendar
+ * @param eventType: Type of event as defined in Activities object that comes with KlcRosterParser
+ * @param description: Description of activity. This will be the calendar item's name
+ * @param startTime: Start time of event
+ * @param endTime: End time of event
+ * @param extraData: Extra data, this till end up in event's location so it will show up on overview
+ * @param notes: Notes for activity, this will include "Inserted by Joozdter" marker
+ * @param _id: id for keeping track of retrieved events from calendar, to be able to delete them.
+ */
 
-data class Event (val event_type: String, val description: String, val start_time: String, val end_time: String, val extra_data: String, val notes: String, val _id: Long? = null){
-    var startInstant: Long? = null
-    var endInstant: Long? = null
-    var duration: Duration? = null
-    init{
-        if (start_time.isNotEmpty()) startInstant = Instant.parse(start_time + "Z").toEpochMilli()
-        if (end_time.isNotEmpty()) endInstant = Instant.parse(end_time + "Z").toEpochMilli()
-        if (startInstant != null && endInstant != null) duration = Duration.of(endInstant!! - startInstant!!, ChronoUnit.MILLIS)
-    }
+data class Event (val eventType: String, val description: String, val startTime: Instant, val endTime: Instant, val extraData: String = "", val notes: String = "", val _id: Long? = null){
+    val startInstant: Long
+        get() = startTime.toEpochMilli()
+    val endInstant: Long
+        get() = endTime.toEpochMilli()
+    val duration = Duration.between(startTime, endTime)
 }

@@ -10,8 +10,8 @@ android {
         applicationId "nl.joozd.joozdter"
         minSdkVersion 17
         targetSdkVersion 29
-        versionCode 12
-        versionName "2.0.0 wip"
+        versionCode 13
+        versionName "2.0.1 wip"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -36,10 +36,11 @@ androidExtensions {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(":klcrosterparser")
     implementation 'com.jakewharton.threetenabp:threetenabp:1.2.1'
     implementation "org.jetbrains.anko:anko-sqlite:$anko_version"
     implementation "com.google.code.gson:gson:2.8.5"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation "com.itextpdf:itextg:5.5.10"
 
     implementation 'androidx.appcompat:appcompat:1.1.0'

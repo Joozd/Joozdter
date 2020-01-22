@@ -2,12 +2,10 @@ package nl.joozd.joozdter.utils
 
 import android.util.Log
 import nl.joozd.joozdter.data.Day
-import nl.joozd.joozdter.data.Event
+import nl.joozd.joozdter.data.EventOld
 import nl.joozd.joozdter.data.EventType
 import org.threeten.bp.*
 import org.threeten.bp.format.DateTimeFormatter
-import org.threeten.bp.temporal.ChronoUnit
-import org.threeten.bp.temporal.TemporalAmount
 
 val dayStartTime = LocalTime.of(3,30)
 
@@ -20,7 +18,7 @@ val dayStartTime = LocalTime.of(3,30)
 fun fixHotels(days: List<Day>): List<Day>{
     val fixedDays: MutableList<Day> = mutableListOf()
     days.forEach{day ->
-        val todaysEvents: MutableList<Event> = mutableListOf()
+        val todaysEvents: MutableList<EventOld> = mutableListOf()
         day.events.forEach {event ->
             when (event.event_type) {
                 EventType.hotel -> {
@@ -49,21 +47,21 @@ fun fixHotels(days: List<Day>): List<Day>{
                 EventType.other -> todaysEvents.add(event.copy(notes = if ("Toc/m:" in event.notes) event.notes.drop(event.notes.indexOf("Toc/m:") + 6) else event.notes))
                 else -> todaysEvents.add(event)
             }
-            if (event.start_time.isEmpty()) Log.d("event", "${event.description}")
-            if (event.end_time.isEmpty()) Log.d("event", "${event.description}")
+            if (event.start_time.isEmpty()) Log.d("event", event.description)
+            if (event.end_time.isEmpty()) Log.d("event", event.description)
         }
         fixedDays.add(Day(day.date, todaysEvents))
     }
     return fixedDays
 }
 
-fun findDayStart(day: Day?): Event? = day?.events?.firstOrNull { it.event_type == EventType.taxi }
+fun findDayStart(day: Day?): EventOld? = day?.events?.firstOrNull { it.event_type == EventType.taxi }
     ?: day?.events?.firstOrNull { it.event_type == EventType.flight_day }
     ?: day?.events?.firstOrNull { it.event_type == EventType.day_over }
 
-fun findDayEnd(day: Day?): Event? = day?.events?.firstOrNull { it.event_type == EventType.flight_day }
+fun findDayEnd(day: Day?): EventOld? = day?.events?.firstOrNull { it.event_type == EventType.flight_day }
 
-fun Day.getFlightDay(): Event? = this.events.firstOrNull{ it.event_type == EventType.flight_day}
+fun Day.getFlightDay(): EventOld? = this.events.firstOrNull{ it.event_type == EventType.flight_day}
 
 
 /**
@@ -82,10 +80,10 @@ fun calculateRest(day1: Day, day2: Day): Duration {
 }
 
 
-fun findDayOver(day: Day?): Event? =  day?.events?.firstOrNull { it.event_type == EventType.day_over }
+fun findDayOver(day: Day?): EventOld? =  day?.events?.firstOrNull { it.event_type == EventType.day_over }
 
 
-fun findTaxiOrNull(day:Day?): Event? = day?.events?.firstOrNull { it.event_type == EventType.taxi }
+fun findTaxiOrNull(day:Day?): EventOld? = day?.events?.firstOrNull { it.event_type == EventType.taxi }
 
 fun makeCaoMarginString(day1: Day, day2: Day): String{
     val rest = calculateRest(day1, day2)

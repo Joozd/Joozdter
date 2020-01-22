@@ -6,7 +6,7 @@ import org.threeten.bp.LocalDate
 import org.threeten.bp.ZoneId
 
 @Keep
-data class Day(val date: String, val events: List<Event>){
+data class Day(val date: String, val events: List<EventOld>){
     val dateAsLocalDate: LocalDate by lazy{
         LocalDate.parse(date)
     }

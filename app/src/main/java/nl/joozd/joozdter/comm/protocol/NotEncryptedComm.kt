@@ -5,7 +5,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import nl.joozd.joozdter.comm.utils.addMetaData
 import nl.joozd.joozdter.data.Day
-import nl.joozd.joozdter.data.Event
+import nl.joozd.joozdter.data.EventOld
 import nl.joozd.joozdter.data.GsonFillableDay
 import nl.joozd.joozdter.data.MetaData
 
@@ -35,7 +35,7 @@ class NotEncryptedComm { // will request an AES key upon initializiation and use
         val jsonData = (client.readFromSocket()!!.message).toString(Charsets.UTF_8)
         if (jsonData == ERROR_INVALID_ROSTER) return null
         val gsonDaysList =(Gson().fromJson<List<GsonFillableDay>>(jsonData, listType))
-        val daysList = gsonDaysList.map{ Day(it.date, it.events.map {e -> Event(e.event_type, e.description, e.start_time, e.end_time, e.extra_data, e.notes)}) }
+        val daysList = gsonDaysList.map{ Day(it.date, it.events.map {e -> EventOld(e.event_type, e.description, e.start_time, e.end_time, e.extra_data, e.notes)}) }
         client.sendOK()
         return daysList
     }
