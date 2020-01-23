@@ -10,7 +10,9 @@ import nl.joozd.joozdter.R
 
 class JoozdterPrefs {
     companion object{
+        const val CURRENTVERSION = 3
         const val FILLED = "filled"
+        const val VERSIONCHECK = "version"
         const val FIRST_TIME = "firstTime"
         // const val SHARE_NAME = "shareName"
         const val PICKED_CALENDAR = "pickedCalendar"
@@ -44,6 +46,14 @@ class JoozdterPrefs {
             putBoolean(FIRST_TIME, v)
             apply()
         }
+
+    var version: Int
+        get() = sharedPref.getInt(VERSIONCHECK, 0)
+        set(v) = with(sharedPref.edit()) {
+            putInt(VERSIONCHECK, v)
+            apply()
+        }
+
 
     var pickedCalendar: String?
         get() = sharedPref.getString(PICKED_CALENDAR,null)
@@ -154,9 +164,16 @@ class JoozdterPrefs {
                 // putBoolean(SHOW_CLICK, true)
                 putBoolean(SHOW_HOTEL, true)
                 putInt(PREFERED_LAYOUT, JoozdlogLayoutOptions.FULL)
+
                 apply()
             }
         }
 
+    }
+
+    fun checkVersion() = version == CURRENTVERSION
+
+    fun updateVersion() {
+        version = CURRENTVERSION
     }
 }

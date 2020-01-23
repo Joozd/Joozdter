@@ -33,7 +33,6 @@ class PdfParserActivity : AppCompatActivity() {
     private val calendarReady = CountDownLatch(1)
     private val calendarUpdateComplete = CountDownLatch(2)
     private val prefs = JoozdterPrefs()
-    //private lateinit var sharedPref: SharedPreferences
     private var working = true
 
     override fun onRequestPermissionsResult(
@@ -49,6 +48,15 @@ class PdfParserActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         AndroidThreeTen.init(this)
         prefs.init(this)
+        if (!prefs.checkVersion()){
+            toast ("version not OK")
+            alert ("Preferences not set, maybe you just updated?") {
+                okButton {
+                    startActivity(intentFor<MainActivity>().singleTop())
+                }
+            }.show()
+            return
+        }
 
 
         //get selected calendar name from sharedPrefs:
@@ -60,7 +68,7 @@ class PdfParserActivity : AppCompatActivity() {
                 okButton {
                     finish()
                 }
-            }
+            }.show()
         }
 
         //check if permissions are OK, ask if they aren't:
@@ -151,6 +159,7 @@ class PdfParserActivity : AppCompatActivity() {
                         )
 
                     }
+                    working = false
                     runOnUiThread {
                         doneText.visibility = View.VISIBLE
                     }

@@ -24,12 +24,12 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="@string/receivedFile"
+            android:visibility="invisible"
             app:layout_constraintBottom_toTopOf="@+id/itSeemsToBeARosterText"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/youDontHaveToWaitText"
-            tools:visibility="invisible" />
+            app:layout_constraintTop_toBottomOf="@+id/youDontHaveToWaitText" />
 
     <TextView
             android:id="@+id/itSeemsToBeARosterText"
@@ -37,12 +37,12 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="@string/itSeemsToBeARoster"
+            android:visibility="invisible"
             app:layout_constraintBottom_toTopOf="@+id/removingOldEvents"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/receivedFileText"
-            tools:visibility="invisible" />
+            app:layout_constraintTop_toBottomOf="@+id/receivedFileText" />
 
     <TextView
             android:id="@+id/removingOldEvents"
@@ -50,12 +50,12 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="@string/removingOldEvents"
+            android:visibility="invisible"
             app:layout_constraintBottom_toTopOf="@+id/addingNewText"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/itSeemsToBeARosterText"
-            tools:visibility="invisible" />
+            app:layout_constraintTop_toBottomOf="@+id/itSeemsToBeARosterText" />
 
     <TextView
             android:id="@+id/addingNewText"
@@ -63,12 +63,12 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="@string/addingNewEvents"
+            android:visibility="invisible"
             app:layout_constraintBottom_toTopOf="@+id/doneText"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/removingOldEvents"
-            tools:visibility="invisible" />
+            app:layout_constraintTop_toBottomOf="@+id/removingOldEvents" />
 
     <TextView
             android:id="@+id/doneText"
@@ -76,10 +76,10 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="@string/done"
+            android:visibility="invisible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/addingNewText"
-            tools:visibility="invisible" />
+            app:layout_constraintTop_toBottomOf="@+id/addingNewText" />
 </androidx.constraintlayout.widget.ConstraintLayout>
