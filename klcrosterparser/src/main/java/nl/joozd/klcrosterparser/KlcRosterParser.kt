@@ -234,11 +234,12 @@ class KlcRosterParser(inputStream: InputStream) {
 
                     standbyRegEx.find(line) != null -> {
                         val words = standbyRegEx.find(line)!!.value.split(" ") // strip any FDP info that may or may not be there
-                        val description = words.slice(0..1).joinToString(" ") // makes nice RESK AMS again
+                        // val description = words.slice(0..1).joinToString(" ") // makes nice RESK AMS again
                         val startTimeInt = words[2].toInt()
                         val endTimeInt = words[3].toInt()
                         val startTime = LocalDateTime.of(activeDate, LocalTime.of(startTimeInt/100, startTimeInt%100)).atZone(ZoneOffset.UTC).toInstant()
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(endTimeInt/100, endTimeInt%100)).atZone(ZoneOffset.UTC).toInstant()
+                        val description = if (legend[words[0]] != null) "${words[0]} (${legend[words[0]]}) ${words[1]}" else line
                         todaysEvents.add(KlcRosterEvent(Activities.STANDBY, startTime, endTime, description))
                     }
 
@@ -335,7 +336,8 @@ class KlcRosterParser(inputStream: InputStream) {
                         val relevantTimes = header.drop(header.indexOf(dayString)).split("\n").take(4).drop(2).map{it.toInt()}
                         val startTime = LocalDateTime.of(activeDate, LocalTime.of(relevantTimes[0]/100, relevantTimes[0]%100)).atZone(ZoneOffset.UTC).toInstant()
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(relevantTimes[1]/100, relevantTimes[1]%100)).atZone(ZoneOffset.UTC).toInstant()
-                        todaysEvents.add(KlcRosterEvent(Activities.SIM, startTime, endTime, legend[line] ?: line))
+                        val description = if (legend[line] != null) "$line (${legend[line]})" else line
+                        todaysEvents.add(KlcRosterEvent(Activities.SIM, startTime, endTime, description))
 
                         while (lines.isNotEmpty()) { // everything after sim is either actual sim or extra info
                             @Suppress("NAME_SHADOWING") val line = lines[0]
@@ -380,15 +382,16 @@ class KlcRosterParser(inputStream: InputStream) {
                         val numbers = line.filter{it in "0123456789 "}.trim().replace("\\s+".toRegex(), " ").split(" ").map{it.toInt()}.drop(1)
                         val startTime = LocalDateTime.of(activeDate, LocalTime.of(numbers[0]/100, numbers[0]%100)).atZone(ZoneOffset.UTC).toInstant()
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(numbers[1]/100, numbers[1]%100)).atZone(ZoneOffset.UTC).toInstant()
-
-                        todaysEvents.add(KlcRosterEvent(Activities.OTHER_DUTY, startTime, endTime, legend[words[0]] ?: line))
+                        val description = if (legend[words[0]] != null) "$${words[0]} (${legend[line]})" else line
+                        todaysEvents.add(KlcRosterEvent(Activities.OTHER_DUTY, startTime, endTime, description))
                     }
 
                     timeOffRegex.find(line) != null -> {
                         val words = line.split(" ")
                         val startTime = LocalDateTime.of(activeDate, LocalTime.MIDNIGHT).atZone(ZoneOffset.UTC).toInstant()
                         val endTime = LocalDateTime.of(activeDate.plusDays(1), LocalTime.MIDNIGHT).atZone(ZoneOffset.UTC).toInstant()
-                        todaysEvents.add(KlcRosterEvent(Activities.LEAVE, startTime, endTime, legend[words[0]] ?: line))
+                        val description = if (legend[words[0]] != null) "${words[0]} (${legend[words[0]]})" else line
+                        todaysEvents.add(KlcRosterEvent(Activities.LEAVE, startTime, endTime, description))
                     }
                     else -> { // add unknown lines to day's extra info
                         if (todaysExtraInfo.isNotEmpty()) todaysExtraInfo += "\n"

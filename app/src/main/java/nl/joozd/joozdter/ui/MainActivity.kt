@@ -1,13 +1,13 @@
 package nl.joozd.joozdter.ui
 
 import android.Manifest
-import android.content.Context
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.widget.AdapterView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,7 +15,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import nl.joozd.joozdter.R
 import nl.joozd.joozdter.calendar.CalendarDescriptor
 import nl.joozd.joozdter.calendar.CalendarHandler
-import nl.joozd.joozdter.data.SharedPrefKeys
+import nl.joozd.joozdter.data.JoozdterPrefs
 import nl.joozd.joozdter.ui.adapters.CalendarPickerAdapter
 import nl.joozd.joozdter.ui.fragments.NewUserFragment
 import org.jetbrains.anko.alert
@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private lateinit var sharedPref: SharedPreferences
+    private val prefs = JoozdterPrefs()
     private lateinit var calendarHandler: CalendarHandler
     private val calendarPickerAdapter = CalendarPickerAdapter(emptyList()) { getCalendar(it) }
     private var showHalpListener: ShowMenuListener? = null
@@ -41,17 +41,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
-        /*R.id.menu_rebuild -> {
-            doAsync {
-                allFlights = Comms().rebuildFromServer()
-                runOnUiThread {
-                    flightDb.clearDB()
-                    flightDb.saveFlights(allFlights)
-                    toast("Database rebuilt. please restart ofzo")
-                }
-            }
-            true
-        } */
         R.id.menu_halp -> {
             showHalpListener?.go()
             true
@@ -67,9 +56,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedPref = this.getSharedPreferences(
-            getString(R.string.preference_file_key), Context.MODE_PRIVATE
-        )
+        prefs.init(this)
+
         val newUserFragment = NewUserFragment()
 
         showHalpListener = ShowMenuListener {
@@ -79,37 +67,15 @@ class MainActivity : AppCompatActivity() {
                 .commit()
         }
 
-
-        // Check if sharedPrefs are filled( ie if not first run), if not fill with default values //
-        val sharedPrefsNotFilled: Boolean =
-            sharedPref.getBoolean(SharedPrefKeys.NOT_FILLED_YET, true)
-        if (sharedPrefsNotFilled) {
-            with(sharedPref.edit()) {
-                putBoolean(SharedPrefKeys.NOT_FILLED_YET, false)
-                putBoolean(SharedPrefKeys.SHARE_NAME, true)
-                putBoolean(SharedPrefKeys.SHOW_FREE_TIME, true)
-                putBoolean(SharedPrefKeys.SHOW_HOTEL, true)
-                putBoolean(SharedPrefKeys.SHOW_TAXI, true)
-                putBoolean(SharedPrefKeys.SHOW_FLIGHT_DAY, true)
-                putBoolean(SharedPrefKeys.SHOW_FLIGHTS, true)
-                putBoolean(SharedPrefKeys.SHOW_OTHER, true)
-                putBoolean(SharedPrefKeys.SHOW_SIM_BRIEFING, true)
-                putBoolean(SharedPrefKeys.SHOW_SIM_SESSION, true)
-                apply()
-            }
-        }
-
         setContentView(R.layout.activity_main)
 
-        if (sharedPref.getBoolean("firstTime", true)) {
+        // show splash screen on first run
+        if (prefs.firstTime) {
             supportFragmentManager.beginTransaction()
                 .add(R.id.mainActivityLayout, newUserFragment)
                 .addToBackStack(null)
                 .commit()
-            with(sharedPref.edit()) {
-                putBoolean("firstTime", false)
-                apply()
-            }
+            prefs.firstTime = false
         } else {
             alert(getString(R.string.youCanClose)) {
                 okButton {}
@@ -126,12 +92,7 @@ class MainActivity : AppCompatActivity() {
         } else {
 
 
-            calendarPickerAdapter.pickCalendar(
-                sharedPref.getString(
-                    SharedPrefKeys.PICKED_CALENDAR,
-                    null
-                )
-            )
+            calendarPickerAdapter.pickCalendar(prefs.pickedCalendar)
             calendarPicker.layoutManager = LinearLayoutManager(this)
             calendarPicker.adapter = calendarPickerAdapter
 
@@ -139,12 +100,7 @@ class MainActivity : AppCompatActivity() {
             calendarHandler.onInit = CalendarHandler.OnInit {
                 runOnUiThread {
                     calendarPickerAdapter.updateData(calendarHandler.calendarsList)
-                    pickedCalendarText.text = calendarHandler.findCalendarByName(
-                        sharedPref.getString(
-                            SharedPrefKeys.PICKED_CALENDAR,
-                            "NOTHINGTOSEEHEREDFSDFKAGFAKGAKFGNDKAFG"
-                        )
-                    )?.displayName ?: ""
+                    pickedCalendarText.text = calendarHandler.findCalendarByName(prefs.pickedCalendar)?.displayName ?: ""
                 }
             }
             doAsync {
@@ -152,90 +108,81 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // set known values to switches, defvalue should not trigger as all set at onCreate() if not done yet
-        shareNameSwitch.isChecked = sharedPref.getBoolean(SharedPrefKeys.SHARE_NAME, false)
-        daysOffswitch.isChecked = sharedPref.getBoolean(SharedPrefKeys.SHOW_FREE_TIME, false)
-        hotelSwitch.isChecked = sharedPref.getBoolean(SharedPrefKeys.SHOW_HOTEL, false)
-        taxiSwitch.isChecked = sharedPref.getBoolean(SharedPrefKeys.SHOW_TAXI, false)
-        flightDaySwitch.isChecked = sharedPref.getBoolean(SharedPrefKeys.SHOW_FLIGHT_DAY, false)
-        flightsSwitch.isChecked = sharedPref.getBoolean(SharedPrefKeys.SHOW_FLIGHTS, false)
-        otherSwitch.isChecked = sharedPref.getBoolean(SharedPrefKeys.SHOW_OTHER, false)
-        simBriefingSwitch.isChecked = sharedPref.getBoolean(SharedPrefKeys.SHOW_SIM_BRIEFING, false)
-        simActualSwitch.isChecked = sharedPref.getBoolean(SharedPrefKeys.SHOW_SIM_SESSION, false)
+        daysOffswitch.isChecked = prefs.showLeave
+        taxiSwitch.isChecked = prefs.showTaxi
+        checkInSwitch.isChecked = prefs.showCheckIn
+        checkOutSwitch.isChecked = prefs.showCheckOut
+        flightsSwitch.isChecked = prefs.showFlight
+        hotelSwitch.isChecked = prefs.showHotel
+        standbySwitch.isChecked = prefs.showStandBy
+        simBriefingSwitch.isChecked = prefs.showSim
+        simActualSwitch.isChecked = prefs.showActualSim
+        otherSwitch.isChecked = prefs.showOther
 
+        /*
         shareNameSwitch.setOnCheckedChangeListener { _, isChecked ->
-            with(sharedPref.edit()) {
-                putBoolean(SharedPrefKeys.SHARE_NAME, isChecked)
-                apply()
-            }
+            prefss.shareName = isChecked
         }
+        */
 
         daysOffswitch.setOnCheckedChangeListener { _, isChecked ->
-            with(sharedPref.edit()) {
-                putBoolean(SharedPrefKeys.SHOW_FREE_TIME, isChecked)
-                apply()
-            }
+            prefs.showLeave = isChecked
         }
 
         hotelSwitch.setOnCheckedChangeListener { _, isChecked ->
-            with(sharedPref.edit()) {
-                putBoolean(SharedPrefKeys.SHOW_HOTEL, isChecked)
-                apply()
-            }
+            prefs.showHotel = isChecked
         }
 
         taxiSwitch.setOnCheckedChangeListener { _, isChecked ->
-            with(sharedPref.edit()) {
-                putBoolean(SharedPrefKeys.SHOW_TAXI, isChecked)
-                apply()
-            }
+            prefs.showTaxi = isChecked
         }
 
-        flightDaySwitch.setOnCheckedChangeListener { _, isChecked ->
+        checkInSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (!isChecked) alert("Make sure to check emailed roster for notes, as they are usually added to CheckIn activity")
+            prefs.showCheckIn = isChecked
+        }
 
-            with(sharedPref.edit()) {
-                putBoolean(SharedPrefKeys.SHOW_FLIGHT_DAY, isChecked)
-                apply()
-            }
+        checkOutSwitch.setOnCheckedChangeListener { _, isChecked ->
+            prefs.showCheckOut = isChecked
         }
 
         flightsSwitch.setOnCheckedChangeListener { _, isChecked ->
-            with(sharedPref.edit()) {
-                putBoolean(SharedPrefKeys.SHOW_FLIGHTS, isChecked)
-                apply()
-            }
+            prefs.showFlight = isChecked
         }
 
         otherSwitch.setOnCheckedChangeListener { _, isChecked ->
-            with(sharedPref.edit()) {
-                putBoolean(SharedPrefKeys.SHOW_OTHER, isChecked)
-                apply()
-            }
+            prefs.showOther = isChecked
         }
 
         simBriefingSwitch.setOnCheckedChangeListener { _, isChecked ->
-            with(sharedPref.edit()) {
-                putBoolean(SharedPrefKeys.SHOW_SIM_BRIEFING, isChecked)
-                apply()
-            }
+            prefs.showSim = isChecked
         }
 
         simActualSwitch.setOnCheckedChangeListener { _, isChecked ->
-            with(sharedPref.edit()) {
-                putBoolean(SharedPrefKeys.SHOW_SIM_SESSION, isChecked)
-                apply()
+            prefs.showActualSim = isChecked
+        }
+
+        standbySwitch.setOnCheckedChangeListener { _, isChecked ->
+            prefs.showStandBy = isChecked
+        }
+
+        preferedLayoutSpinner.onItemSelectedListener = object:  AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                prefs.preferedLayout = position + 1
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Do nothing
             }
         }
+        preferedLayoutSpinner.setSelection(prefs.preferedLayout-1)
 
 
     }
 
     private fun getCalendar(calendar: CalendarDescriptor){
         pickedCalendarText.text = calendar.displayName
-        with (sharedPref.edit()) {
-            putString(SharedPrefKeys.PICKED_CALENDAR, calendar.name)
-            apply()
-        }
+        prefs.pickedCalendar = calendar.name
         calendarPickerAdapter.pickCalendar(calendar.name)
     }
 }

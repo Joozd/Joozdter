@@ -72,12 +72,14 @@
     <string name="pickCalendar">Pick a calendar:</string>
     <string name="calendarPicked">Calendar picked:</string>
     <string name="shareName">Deel je naam met je crews</string>
-    <string name="preference_file_key">nl.joozd.joozdter.PREFERENCE_FILE_KEY</string>
+    <string name="preference_file_key">nl.joozd.joozdter.PREFERENCE_FILE_KEY2</string>
     <string name="youCanClose">You can close this screen when you are done</string>
     <string name="showDaysOff">Show Days Off</string>
     <string name="showHotel">Show Hotels</string>
     <string name="showTaxi">Show Taxi / Pickup</string>
     <string name="showFlightDay">Show Flight Day</string>
+    <string name="showCheckIn">Show Check In</string>
+    <string name="showCheckOut">Show Check Out</string>
     <string name="showFlights">Show Flights</string>
     <string name="showOtherDuties">Show Other Duties</string>
     <string name="showSimBriefing">Show Simulator Briefing Time</string>
@@ -88,10 +90,23 @@
     <string name="makeSelectionsInNextScreen">Just pick a calendar and set your preferences in the next screen!</string>
     <string name="thenJustShare">Then, just share your KLC roster from your favorite PDF reader with this app!</string>
     <string name="youCanCloseWhenDone">You can close this app when you are done with the settings!</string>
-    <string name="privacyStatement">Verder sla ik geen gegevens op, anders dan je naam en vluchten, en dat alleen als je aangeeft dat je dat wil delen.</string>
-    <string name="addingToCalendar">Agenda bijwerken...</string>
+    <string name="privacyStatement">This app doesn\'t transmit any data to anybody.</string>
+    <string name="addingToCalendar">Agenda bijwerken…</string>
     <string name="hostNotFound">Could not find host. Are you connected to the internet?</string>
     <string name="errorParsingRoster">Unknown Error, might be server problem. Please try again later.</string>
     <string name="errorWrongFile">Server did not recognize this as a KLC roster!</string>
     <string name="serverRefused">Connection problem, please try again later.</string>
+    <string name="showStandby">Show  Standby</string>
+    <string name="receivedFile">Received File…</string>
+    <string name="itSeemsToBeARoster">It seems to be a roster!</string>
+    <string name="youDontHaveToWait">(You don\'t have to wait for this)</string>
+    <string name="removingOldEvents">Removing old events...</string>
+    <string name="addingNewEvents">Adding new events...</string>
+    <string name="done">Done!</string>
+    <string name="eventLayoutPickerPrompt">Pick a layout for entries</string>
+    <string-array name="eventLayouts">
+        <item>TSACT</item>
+        <item>Aerodrome Comp. Trng</item>
+        <item>TSACT (Aerodrome Comp. Trng)</item>
+    </string-array>
 </resources>

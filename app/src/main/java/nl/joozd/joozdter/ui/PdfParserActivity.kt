@@ -10,11 +10,14 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Parcelable
 import android.util.Log
+import android.view.View
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.jakewharton.threetenabp.AndroidThreeTen
+import kotlinx.android.synthetic.main.activity_pdf_parser.*
 import nl.joozd.joozdter.R
 import nl.joozd.joozdter.calendar.CalendarHandler
+import nl.joozd.joozdter.data.JoozdterPrefs
 
 import nl.joozd.joozdter.data.SharedPrefKeys
 import nl.joozd.joozdter.utils.parseEvents
@@ -32,7 +35,8 @@ class PdfParserActivity : AppCompatActivity() {
     private val initialized = CountDownLatch(1)
     private val calendarReady = CountDownLatch(1)
     private val calendarUpdateComplete = CountDownLatch(2)
-    private lateinit var sharedPref: SharedPreferences
+    private val prefs = JoozdterPrefs()
+    //private lateinit var sharedPref: SharedPreferences
     private var working = true
 
     override fun onRequestPermissionsResult(
@@ -47,13 +51,11 @@ class PdfParserActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AndroidThreeTen.init(this)
+        prefs.init(this)
 
-        sharedPref = this.getSharedPreferences(
-            getString(R.string.preference_file_key), Context.MODE_PRIVATE
-        )
 
         //get selected calendar name from sharedPrefs:
-        val calendarName = sharedPref.getString(SharedPrefKeys.PICKED_CALENDAR, "NOT FOUND!!!!!!1")
+        val calendarName = prefs.pickedCalendar ?: "NOT FOUND!!!!!!1"
 
         // handle if no calendar selected yet:
         if (calendarName == "NOT FOUND!!!!!!1") {
@@ -112,34 +114,53 @@ class PdfParserActivity : AppCompatActivity() {
                     alert("Inputstream is null!")
                     return
                 }
+                receivedFileText.visibility = View.VISIBLE
 
                 //parse inputstream as roster:
                 doAsync {
                     val roster = KlcRosterParser(inputStream)
-                    if (!roster.seemsValid){
+                    if (!roster.seemsValid) {
                         Log.e(TAG, "roster.seemsValid == false")
                         alert("This doesn't seem to be a KLC Roster")
                     } else {
+                        runOnUiThread {
+                            itSeemsToBeARosterText.visibility = View.VISIBLE
+                        }
                         //TODO add FDP and CAO checks to relevant fields
 
                         //remove all events on days that are on current roster
-                        val hotelEvent = calendarHandler.getHotelEvent(roster.days.map{it.date}.min()!!)
-                        roster.days.map{it.date}.forEach {date ->
+                        val hotelEvent =
+                            calendarHandler.getHotelEvent(roster.days.map { it.date }.min()!!)
+
+                        runOnUiThread {
+                            removingOldEvents.visibility = View.VISIBLE
+                        }
+                        roster.days.map { it.date }.forEach { date ->
                             val i = date.atStartOfDay().atZone(ZoneId.of("UTC")).toInstant()
                             val todaysEvents = calendarHandler.getEventsStartingOn(i)
                             calendarHandler.deleteEvents(todaysEvents)
                         }
 
                         //add new events to calendar:
+                        runOnUiThread {
+                            addingNewText.visibility = View.VISIBLE
+                        }
 
-                        val allEvents = (parseEvents(roster.days)+ hotelEvent).filterNotNull()
-                        calendarHandler.insertEvents(allEvents, sharedPref)
-                        Log.d(TAG, "Inserted ${allEvents.size} items into calendar ${calendarHandler.activeCalendar}")
+                        val allEvents = (parseEvents(roster.days) + hotelEvent).filterNotNull()
+                        calendarHandler.insertEvents(allEvents, prefs)
+                        Log.d(
+                            TAG,
+                            "Inserted ${allEvents.size} items into calendar ${calendarHandler.activeCalendar}"
+                        )
 
+                    }
+                    runOnUiThread {
+                        doneText.visibility = View.VISIBLE
                     }
                 }
             }
-        } // oncreate
+        }
+
     }
 
     override fun onBackPressed() {

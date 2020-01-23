@@ -12,12 +12,15 @@
             android:id="@+id/scrollView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fillViewport="true">
+            android:fillViewport="true"
+            tools:layout_editor_absoluteX="0dp"
+            tools:layout_editor_absoluteY="317dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@android:color/darker_gray"
+                android:padding="2dp"
                 tools:context=".ui.MainActivity">
 
             <TextView
@@ -29,12 +32,12 @@
                     android:textStyle="bold"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/shareNameSwitch" />
+                    app:layout_constraintTop_toTopOf="parent" />
 
             <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/calendarPicker"
                     android:layout_width="0dp"
-                    android:layout_height="280dp"
+                    android:layout_height="300dp"
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="8dp"
                     android:layout_marginEnd="8dp"
@@ -62,30 +65,38 @@
                     app:layout_constraintStart_toEndOf="@+id/textView2"
                     app:layout_constraintTop_toTopOf="@+id/textView2" />
 
-            <Switch
-                    android:id="@+id/shareNameSwitch"
+            <TextView
+                    android:id="@+id/textView4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/eventLayoutPickerPrompt"
+                    app:layout_constraintStart_toStartOf="@+id/calendarPicker"
+                    app:layout_constraintTop_toBottomOf="@+id/textView2" />
+
+            <Spinner
+                    android:id="@+id/preferedLayoutSpinner"
                     android:layout_width="0dp"
-                    android:layout_height="27dp"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginEnd="16dp"
-                    android:text="@string/shareName"
-                    android:textOff="No"
-                    android:textOn="Yes"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/rounded_corners"
+                    android:entries="@array/eventLayouts"
+                    android:padding="2dp"
+                    android:prompt="@string/eventLayoutPickerPrompt"
+                    app:layout_constraintEnd_toEndOf="@+id/calendarPicker"
+                    app:layout_constraintStart_toStartOf="@+id/calendarPicker"
+                    app:layout_constraintTop_toBottomOf="@+id/textView4" />
 
             <Switch
                     android:id="@+id/daysOffswitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="16dp"
                     android:includeFontPadding="false"
                     android:text="@string/showDaysOff"
-                    app:layout_constraintEnd_toEndOf="@+id/shareNameSwitch"
+                    app:layout_constraintEnd_toEndOf="@+id/calendarPicker"
                     app:layout_constraintStart_toStartOf="@+id/textView2"
-                    app:layout_constraintTop_toBottomOf="@+id/textView2" />
+                    app:layout_constraintTop_toBottomOf="@+id/preferedLayoutSpinner" />
 
             <Switch
                     android:id="@+id/hotelSwitch"
@@ -110,15 +121,26 @@
                     app:layout_constraintTop_toBottomOf="@+id/hotelSwitch" />
 
             <Switch
-                    android:id="@+id/flightDaySwitch"
+                    android:id="@+id/checkInSwitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:includeFontPadding="false"
-                    android:text="@string/showFlightDay"
+                    android:text="@string/showCheckIn"
                     app:layout_constraintEnd_toEndOf="@+id/daysOffswitch"
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/taxiSwitch" />
+
+            <Switch
+                    android:id="@+id/checkOutSwitch"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:includeFontPadding="false"
+                    android:text="@string/showCheckOut"
+                    app:layout_constraintEnd_toEndOf="@+id/checkInSwitch"
+                    app:layout_constraintStart_toStartOf="@+id/textView2"
+                    app:layout_constraintTop_toBottomOf="@+id/checkInSwitch" />
 
             <Switch
                     android:id="@+id/flightsSwitch"
@@ -129,7 +151,7 @@
                     android:text="@string/showFlights"
                     app:layout_constraintEnd_toEndOf="@+id/daysOffswitch"
                     app:layout_constraintStart_toStartOf="@+id/textView2"
-                    app:layout_constraintTop_toBottomOf="@+id/flightDaySwitch" />
+                    app:layout_constraintTop_toBottomOf="@+id/checkOutSwitch" />
 
             <Switch
                     android:id="@+id/otherSwitch"
@@ -164,14 +186,28 @@
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/simBriefingSwitch" />
 
+            <Switch
+                    android:id="@+id/standbySwitch"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:includeFontPadding="false"
+                    android:text="@string/showStandby"
+                    app:layout_constraintEnd_toEndOf="@+id/daysOffswitch"
+                    app:layout_constraintStart_toStartOf="@+id/textView2"
+                    app:layout_constraintTop_toBottomOf="@+id/simActualSwitch" />
+
             <TextView
                     android:id="@+id/textView3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
+                    android:layout_marginBottom="24dp"
                     android:text="@string/comingSoonMyLogbookApp"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="@+id/textView2"
-                    app:layout_constraintTop_toBottomOf="@+id/simActualSwitch" />
+                    app:layout_constraintTop_toBottomOf="@+id/standbySwitch" />
+
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

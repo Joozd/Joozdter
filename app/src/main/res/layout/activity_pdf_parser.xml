@@ -7,66 +7,79 @@
         tools:context=".ui.PdfParserActivity">
 
     <TextView
-            android:id="@+id/connecttingToServerTextView"
+            android:id="@+id/youDontHaveToWaitText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="64dp"
-            android:text="@string/connectingToServer"
-            app:layout_constraintBottom_toTopOf="@+id/receivingDataText"
+            android:layout_marginTop="32dp"
+            android:text="@string/youDontHaveToWait"
+            app:layout_constraintBottom_toTopOf="@+id/receivedFileText"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-            android:id="@+id/connectedCheck"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="✅"
-            android:visibility="invisible"
-            app:layout_constraintStart_toEndOf="@+id/connecttingToServerTextView"
-            app:layout_constraintTop_toTopOf="@+id/connecttingToServerTextView" />
-
-    <TextView
-            android:id="@+id/receivingDataText"
+            android:id="@+id/receivedFileText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
-            android:text="@string/receivingData"
-            app:layout_constraintBottom_toTopOf="@+id/updatingCalendarText"
+            android:text="@string/receivedFile"
+            app:layout_constraintBottom_toTopOf="@+id/itSeemsToBeARosterText"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/connecttingToServerTextView" />
+            app:layout_constraintTop_toBottomOf="@+id/youDontHaveToWaitText"
+            tools:visibility="invisible" />
 
     <TextView
-            android:id="@+id/receivingDataCheck"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="✅"
-            android:visibility="invisible"
-            app:layout_constraintStart_toEndOf="@+id/receivingDataText"
-            app:layout_constraintTop_toTopOf="@+id/receivingDataText" />
-
-    <TextView
-            android:id="@+id/updatingCalendarText"
+            android:id="@+id/itSeemsToBeARosterText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
-            android:layout_marginBottom="64dp"
-            android:text="@string/addingToCalendar"
+            android:text="@string/itSeemsToBeARoster"
+            app:layout_constraintBottom_toTopOf="@+id/removingOldEvents"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/receivedFileText"
+            tools:visibility="invisible" />
+
+    <TextView
+            android:id="@+id/removingOldEvents"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="@string/removingOldEvents"
+            app:layout_constraintBottom_toTopOf="@+id/addingNewText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/itSeemsToBeARosterText"
+            tools:visibility="invisible" />
+
+    <TextView
+            android:id="@+id/addingNewText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="@string/addingNewEvents"
+            app:layout_constraintBottom_toTopOf="@+id/doneText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/removingOldEvents"
+            tools:visibility="invisible" />
+
+    <TextView
+            android:id="@+id/doneText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="@string/done"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/receivingDataText" />
-
-    <TextView
-            android:id="@+id/doneCheck"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="✅"
-            android:visibility="invisible"
-            app:layout_constraintStart_toEndOf="@+id/updatingCalendarText"
-            app:layout_constraintTop_toTopOf="@+id/updatingCalendarText" />
+            app:layout_constraintTop_toBottomOf="@+id/addingNewText"
+            tools:visibility="invisible" />
 </androidx.constraintlayout.widget.ConstraintLayout>

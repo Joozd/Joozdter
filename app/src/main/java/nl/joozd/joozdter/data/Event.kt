@@ -20,4 +20,5 @@ data class Event (val eventType: String, val description: String, val startTime:
     val endInstant: Long
         get() = endTime.toEpochMilli()
     val duration = Duration.between(startTime, endTime)
+    override fun toString() = "Event: $eventType / $description / start: $startTime / end: $endTime"
 }

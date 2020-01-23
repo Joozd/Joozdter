@@ -9,6 +9,8 @@ import android.provider.CalendarContract
 import android.util.Log
 import androidx.core.content.ContextCompat
 import nl.joozd.joozdter.data.Event
+import nl.joozd.joozdter.data.JoozdlogLayoutOptions
+import nl.joozd.joozdter.data.JoozdterPrefs
 import nl.joozd.joozdter.data.SharedPrefKeys
 import nl.joozd.klcrosterparser.Activities
 import org.jetbrains.anko.doAsync
@@ -109,7 +111,7 @@ class CalendarHandler(private val context: Context){
         }
     }
 
-    fun findCalendarByName(name: String?): CalendarDescriptor? = calendarsList.singleOrNull{it.name == name}
+    fun findCalendarByName(name: String?): CalendarDescriptor? = if (name == null) null else calendarsList.singleOrNull{it.name == name}
 
     fun getEventsTouching(dateInstant: Instant): List<Event> {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
@@ -217,21 +219,72 @@ class CalendarHandler(private val context: Context){
         }
     }
 
-    fun insertEvents(eventsList: List<Event>, sharedPreferences: SharedPreferences){
+    fun insertEvents(eventsList: List<Event>, prefs: JoozdterPrefs){
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
             != PackageManager.PERMISSION_GRANTED) return
-        eventsList.forEach{ event ->
+        eventsList.forEach{ originalEvent ->
             // check event type and if that is to be calendarized:
+            var event = originalEvent
             var putItIn = true
             when (event.eventType){
-                Activities.LEAVE, Activities.CLICK -> putItIn = sharedPreferences.getBoolean(SharedPrefKeys.SHOW_FREE_TIME, true) // shouldnt need default value
-                Activities.HOTEL -> putItIn = sharedPreferences.getBoolean(SharedPrefKeys.SHOW_HOTEL, true) // shouldnt need default value
-                Activities.TAXI -> putItIn = sharedPreferences.getBoolean(SharedPrefKeys.SHOW_TAXI, true) // shouldnt need default value
-                Activities.CHECKIN, Activities.CHECKOUT -> putItIn = sharedPreferences.getBoolean(SharedPrefKeys.SHOW_FLIGHT_DAY, true) // shouldnt need default value
-                Activities.FLIGHT -> putItIn = sharedPreferences.getBoolean(SharedPrefKeys.SHOW_FLIGHTS, true) // shouldnt need default value
-                Activities.OTHER_DUTY -> putItIn = sharedPreferences.getBoolean(SharedPrefKeys.SHOW_OTHER, true) // shouldnt need default value
-                Activities.SIM -> putItIn = sharedPreferences.getBoolean(SharedPrefKeys.SHOW_FREE_TIME, true) // shouldnt need default value
-                Activities.ACTUALSIM -> putItIn = sharedPreferences.getBoolean(SharedPrefKeys.SHOW_FREE_TIME, true) // shouldnt need default value
+                Activities.LEAVE, Activities.CLICK -> {
+                    putItIn = prefs.showLeave
+                    when (prefs.preferedLayout){
+                        JoozdlogLayoutOptions.CODE -> event = event.copy(description = event.description.split (" ").firstOrNull() ?: event.description)
+                        JoozdlogLayoutOptions.DECODED -> {
+                            val description = if (event.description.split (" ").size >1 )
+                                if (event.description.split (" ").drop(1).joinToString(" ").trim().length >1) event.description.split (" ").drop(1).joinToString(" ").trim().drop(1).dropLast(1)
+                                else event.description
+                            else event.description
+                            event = event.copy(description = description)
+                        }
+                    }
+                }
+                Activities.HOTEL -> putItIn = prefs.showHotel
+                Activities.TAXI -> putItIn = prefs.showTaxi
+                Activities.CHECKIN -> putItIn = prefs.showCheckIn
+                Activities.CHECKOUT -> putItIn = prefs.showCheckOut
+                Activities.FLIGHT -> putItIn = prefs.showFlight
+                Activities.OTHER_DUTY -> {
+                    putItIn = prefs.showOther
+                    when (prefs.preferedLayout){
+                        JoozdlogLayoutOptions.CODE -> event = event.copy(description = event.description.split (" ").firstOrNull() ?: event.description)
+                        JoozdlogLayoutOptions.DECODED -> {
+                            val description = if (event.description.split (" ").size >1 )
+                                if (event.description.split (" ").drop(1).joinToString(" ").trim().length >1) event.description.split (" ").drop(1).joinToString(" ").trim().drop(1).dropLast(1)
+                                else event.description
+                            else event.description
+                            event = event.copy(description = description)
+                        }
+                    }
+                }
+                Activities.SIM -> {
+                    putItIn = prefs.showSim
+                    when (prefs.preferedLayout){
+                        JoozdlogLayoutOptions.CODE -> event = event.copy(description = event.description.split (" ").firstOrNull() ?: event.description)
+                        JoozdlogLayoutOptions.DECODED -> {
+                            val description = if (event.description.split (" ").size >1 )
+                                if (event.description.split (" ").drop(1).joinToString(" ").trim().length >1) event.description.split (" ").drop(1).joinToString(" ").trim().drop(1).dropLast(1)
+                                else event.description
+                            else event.description
+                            event = event.copy(description = description)
+                        }
+                    }
+                }
+                Activities.ACTUALSIM -> putItIn = prefs.showActualSim
+                Activities.STANDBY -> {
+                    putItIn = prefs.showStandBy
+                    when (prefs.preferedLayout){
+                        JoozdlogLayoutOptions.CODE -> event = event.copy(description = event.description.split (" ").firstOrNull() ?: event.description)
+                        JoozdlogLayoutOptions.DECODED -> {
+                            val description = if (event.description.split (" ").size >1 )
+                                if (event.description.split (" ").drop(1).joinToString(" ").trim().length >1) event.description.split (" ").drop(1).joinToString(" ").trim().drop(1).dropLast(1)
+                                else event.description
+                            else event.description
+                            event = event.copy(description = description)
+                        }
+                    }
+                }
             }
             if (putItIn) {
                 doAsync {
