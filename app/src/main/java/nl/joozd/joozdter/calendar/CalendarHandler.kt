@@ -11,7 +11,6 @@ import androidx.core.content.ContextCompat
 import nl.joozd.joozdter.data.Event
 import nl.joozd.joozdter.data.JoozdlogLayoutOptions
 import nl.joozd.joozdter.data.JoozdterPrefs
-import nl.joozd.joozdter.data.SharedPrefKeys
 import nl.joozd.klcrosterparser.Activities
 import org.jetbrains.anko.doAsync
 import org.threeten.bp.Instant

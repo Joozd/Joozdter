@@ -1,9 +1,7 @@
 package nl.joozd.joozdter.ui
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -19,7 +17,6 @@ import nl.joozd.joozdter.R
 import nl.joozd.joozdter.calendar.CalendarHandler
 import nl.joozd.joozdter.data.JoozdterPrefs
 
-import nl.joozd.joozdter.data.SharedPrefKeys
 import nl.joozd.joozdter.utils.parseEvents
 import nl.joozd.klcrosterparser.KlcRosterParser
 import org.jetbrains.anko.*
