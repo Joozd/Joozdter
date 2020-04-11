@@ -21,7 +21,7 @@ class NewUserFragment : Fragment() {
     ): View? {
         thisView = inflater.inflate(R.layout.new_user_fragment, container, false)
 
-        val closeButton: Button = thisView.findViewById(R.id.closeButton)
+        val closeButton: Button = thisView.findViewById(R.id.closePdfParserActivityButton)
 
         closeButton.setOnClickListener {
             fragmentManager?.popBackStack()

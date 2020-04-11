@@ -10,7 +10,7 @@ import nl.joozd.joozdter.R
 
 class JoozdterPrefs {
     companion object{
-        const val CURRENTVERSION = 3
+        const val CURRENTVERSION = 3 // version of JoozdterPrefs, only update if changing something in this companion object
         const val FILLED = "filled"
         const val VERSIONCHECK = "version"
         const val FIRST_TIME = "firstTime"
@@ -140,12 +140,20 @@ class JoozdterPrefs {
             apply()
         }
 
-    /**
+    /**     *
      * Binds context to this class and fills fields with default values if not willed yet
+     * Then, it checks if version has been updated. If version is not the version expected, it will remove all settings and return false.
+     *  In this case, program should run updateVersion() and reset all values
      * @param context: Context of SharedPreferences to load
      */
-    fun init(context: Context){
+    fun init(context: Context): Boolean{
         ctx = context
+
+        //delete all prefs on update:
+        if (!checkVersion()) {
+            sharedPref.edit().clear().apply()
+            return false
+        }
 
         // Check if sharedPrefs are filled( ie if not first run), if not fill with default values //
         if (!filled) {
@@ -168,10 +176,11 @@ class JoozdterPrefs {
                 apply()
             }
         }
+        return true
 
     }
 
-    fun checkVersion() = version == CURRENTVERSION
+    private fun checkVersion() = version == CURRENTVERSION
 
     fun updateVersion() {
         version = CURRENTVERSION

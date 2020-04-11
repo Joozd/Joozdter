@@ -89,7 +89,7 @@
                 app:srcCompat="@drawable/share_example" />
 
         <Button
-                android:id="@+id/closeButton"
+                android:id="@+id/closePdfParserActivityButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"

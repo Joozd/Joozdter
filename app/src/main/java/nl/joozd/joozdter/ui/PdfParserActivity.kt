@@ -47,10 +47,10 @@ class PdfParserActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AndroidThreeTen.init(this)
-        prefs.init(this)
-        if (!prefs.checkVersion()){
+        setContentView(R.layout.activity_pdf_parser)
+        if (!prefs.init(this)){
             toast ("version not OK")
-            alert ("Preferences not set, maybe you just updated?") {
+            alert ("Preferences not set, maybe you just updated?\nYou will be redirected to settings screen. Please check settings and then retry.") {
                 okButton {
                     startActivity(intentFor<MainActivity>().singleTop())
                 }
@@ -58,6 +58,7 @@ class PdfParserActivity : AppCompatActivity() {
             return
         }
 
+        closePdfParserActivityButton.setOnClickListener { finish() }
 
         //get selected calendar name from sharedPrefs:
         val calendarName = prefs.pickedCalendar ?: "NOT FOUND!!!!!!1"
@@ -96,7 +97,7 @@ class PdfParserActivity : AppCompatActivity() {
         }
 
         Log.d(TAG, "started")
-        setContentView(R.layout.activity_pdf_parser)
+
 
         // get inputstream from intent:
         intent?.let {
@@ -116,7 +117,7 @@ class PdfParserActivity : AppCompatActivity() {
                 }
                 if (inputStream == null) {
                     Log.e(TAG, "Inputstream is null")
-                    alert("Inputstream is null!")
+                    alert("Inputstream is null!").show()
                     return
                 }
                 receivedFileText.visibility = View.VISIBLE
@@ -126,7 +127,7 @@ class PdfParserActivity : AppCompatActivity() {
                     val roster = KlcRosterParser(inputStream)
                     if (!roster.seemsValid) {
                         Log.e(TAG, "roster.seemsValid == false")
-                        alert("This doesn't seem to be a KLC Roster")
+                        alert("This doesn't seem to be a KLC Roster").show()
                     } else {
                         runOnUiThread {
                             itSeemsToBeARosterText.visibility = View.VISIBLE
@@ -152,6 +153,9 @@ class PdfParserActivity : AppCompatActivity() {
                         }
 
                         val allEvents = (parseEvents(roster.days) + hotelEvent).filterNotNull()
+                        allEvents.forEach{
+                            Log.d(TAG, it.toString())
+                        }
                         calendarHandler.insertEvents(allEvents, prefs)
                         Log.d(
                             TAG,
@@ -162,6 +166,7 @@ class PdfParserActivity : AppCompatActivity() {
                     working = false
                     runOnUiThread {
                         doneText.visibility = View.VISIBLE
+                        closePdfParserActivityButton.visibility = View.VISIBLE
                     }
                 }
             }

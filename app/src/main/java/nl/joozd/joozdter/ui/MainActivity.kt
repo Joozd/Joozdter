@@ -56,8 +56,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefs.init(this)
-        prefs.updateVersion()
+        if (!prefs.init(this)) {
+            prefs.updateVersion()
+            prefs.init(this)
+        }
+
 
         val newUserFragment = NewUserFragment()
 

@@ -28,7 +28,7 @@ class KlcRosterParser(inputStream: InputStream) {
         private const val weekDay = "Mon|Tue|Wed|Thu|Fri|Sat|Sun"
         private const val carrier = "DH/[A-Z]{2}|WA|KL"
         private const val simString = "TSTR1|TSTR1H|TSTR2|TSTR2H|TSFCL|TSLOE|TSLOEH|TSOD|TSODH|TSACTI|TSACT"
-        private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD"
+        private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD|LVE|WTV|IFLC|SLGC"
         private const val standbyString = "RESH|RESK"
         private const val extraString = "TCRM|TCRMI|TCUG"
         private const val otherDutyString = "MMCS|TCBT|TGC|TFIE|TBEXI|OE"
@@ -409,7 +409,7 @@ class KlcRosterParser(inputStream: InputStream) {
     private fun getNextActivityStartTimeInt(l: List<String>): Int{
         val line = l.filter{ line -> line.filter{it.isDigit()}.isNotEmpty()}.firstOrNull()?.filter{it in "0123456789 "} // makes string of first line with numbers in it, only numbers and spaces
             ?: return 0 // gets only lines with digits in it, to lose lines like "TLC"
-        val lineAsWords = line.split(" ")
+        val lineAsWords = line.split(" ").filter {it.isNotEmpty()}
 
         //return either the only numbers in it, or the second group (as first will be flightnumber)
         return if (lineAsWords.size == 1) lineAsWords[0].toInt() else lineAsWords[1].toInt()
