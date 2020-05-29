@@ -263,7 +263,7 @@ class KlcRosterParser(inputStream: InputStream) {
 
                         val orig = words[2]
                         val dest = words[5]
-                        val description = "${words[0]}${words[1]} $orig -> $dest" // KL1234 AMS -> BLQ
+                        val description = "${words[0]}${words[1]} $orig - $dest" // KL1234 AMS - BLQ
                         val extraInfo = line.drop(flightRegex.find(line)!!.value.length) // anything after DEST is extra info, usually just a/c type
 
                         todaysEvents.add(KlcRosterEvent(Activities.FLIGHT, startTime, endTime, description, extraInfo))

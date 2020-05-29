@@ -81,7 +81,7 @@ class CalendarHandler(private val context: Context){
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
             != PackageManager.PERMISSION_GRANTED) return
         val uri: Uri = CalendarContract.Calendars.CONTENT_URI
-        context.contentResolver.query(uri, CALENDAR_PROJECTION, null, null, null)!!.use {cur ->
+        context.contentResolver.query(uri, CALENDAR_PROJECTION, null, null, null)?.use {cur ->
             while (cur.moveToNext()) {
                 // Get the field values
                 val calID: Long = cur.getLong(PROJECTION_ID_INDEX)
@@ -107,7 +107,7 @@ class CalendarHandler(private val context: Context){
                 onInit?.init()
                 initialized = true
             }
-        }
+        } ?: error { "ERROR HTP GRGR"}
     }
 
     fun findCalendarByName(name: String?): CalendarDescriptor? = if (name == null) null else calendarsList.singleOrNull{it.name == name}
