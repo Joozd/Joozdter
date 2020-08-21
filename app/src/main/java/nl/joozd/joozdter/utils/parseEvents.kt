@@ -54,16 +54,15 @@ fun parseEvents(rosterDays: List<RosterDay>): List<Event>{
 
     // check CAO rest:
     val taxiEvents = events.filter{it.eventType == Activities.TAXI}
-    taxiEvents.forEach{ taxi ->
-        val hotelEvent = events.firstOrNull{it.eventType == Activities.HOTEL && it.endTime == taxi.startTime}
-        hotelEvent?.let{
-            val checkedRest = checkHotelRest(hotelEvent, taxi)
-            val newHotelEvent = hotelEvent.copy(extraData = checkedRest.first, notes = checkedRest.second)
-            events.set(events.indexOf(hotelEvent), newHotelEvent)
+    taxiEvents.forEach { taxi ->
+        val hotelEvent =
+            events.firstOrNull { it.eventType == Activities.HOTEL && it.endTime == taxi.startTime }
+        hotelEvent?.let {
+            checkHotelRest(it, taxi).let { checkedRest ->
+                events[events.indexOf(it)] = it.copy(extraData = checkedRest.first, notes = checkedRest.second)
+            }
         }
     }
-
-
 
     return events.toList()
 }
