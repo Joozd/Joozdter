@@ -3,8 +3,8 @@ package nl.joozd.joozdter.utils
 import nl.joozd.joozdter.data.Event
 import nl.joozd.klcrosterparser.Activities
 import nl.joozd.klcrosterparser.RosterDay
-import org.threeten.bp.Duration
-import org.threeten.bp.ZoneId
+import java.time.Duration
+import java.time.ZoneId
 
 
 /**

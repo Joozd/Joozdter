@@ -1,6 +1,6 @@
 package nl.joozd.joozdter.utils
 
-import org.threeten.bp.*
+import java.time.*
 
 /**
  * fdpChecker will check FDP margin for two times.

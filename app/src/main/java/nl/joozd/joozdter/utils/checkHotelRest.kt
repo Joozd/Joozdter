@@ -1,7 +1,7 @@
 package nl.joozd.joozdter.utils
 
 import nl.joozd.joozdter.data.Event
-import org.threeten.bp.Duration
+import java.time.Duration
 
 fun checkHotelRest(hotel: Event, taxi: Event): Pair<String, String>{
     val actualRest = hotel.duration

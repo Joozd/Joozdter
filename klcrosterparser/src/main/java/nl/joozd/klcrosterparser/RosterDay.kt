@@ -1,6 +1,6 @@
 package nl.joozd.klcrosterparser
 
-import org.threeten.bp.*
+import java.time.*
 
 data class RosterDay(val date: LocalDate, val events: List<KlcRosterEvent>, val extraInfo: String) {
     val startOfDay: Instant by lazy{

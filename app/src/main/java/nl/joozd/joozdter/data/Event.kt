@@ -1,7 +1,7 @@
 package nl.joozd.joozdter.data
 
-import org.threeten.bp.Instant
-import org.threeten.bp.Duration
+import java.time.Instant
+import java.time.Duration
 
 /**
  * Event that will be put into calendar

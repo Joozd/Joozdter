@@ -3,9 +3,10 @@ package nl.joozd.klcrosterparser
 import com.itextpdf.text.pdf.PdfReader
 import com.itextpdf.text.pdf.parser.PdfTextExtractor
 import com.itextpdf.text.pdf.parser.SimpleTextExtractionStrategy
-import org.threeten.bp.*
-import org.threeten.bp.format.DateTimeFormatter
+
 import java.io.InputStream
+import java.time.*
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 /**

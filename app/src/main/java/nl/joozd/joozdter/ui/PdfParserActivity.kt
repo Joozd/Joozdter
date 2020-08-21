@@ -11,7 +11,6 @@ import android.util.Log
 import android.view.View
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.jakewharton.threetenabp.AndroidThreeTen
 import kotlinx.android.synthetic.main.activity_pdf_parser.*
 import nl.joozd.joozdter.R
 import nl.joozd.joozdter.calendar.CalendarHandler
@@ -20,7 +19,7 @@ import nl.joozd.joozdter.data.JoozdterPrefs
 import nl.joozd.joozdter.utils.parseEvents
 import nl.joozd.klcrosterparser.KlcRosterParser
 import org.jetbrains.anko.*
-import org.threeten.bp.ZoneId
+import java.time.ZoneId
 import java.io.FileNotFoundException
 import java.util.concurrent.CountDownLatch
 
@@ -46,7 +45,6 @@ class PdfParserActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AndroidThreeTen.init(this)
         setContentView(R.layout.activity_pdf_parser)
         if (!prefs.init(this)){
             toast ("version not OK")

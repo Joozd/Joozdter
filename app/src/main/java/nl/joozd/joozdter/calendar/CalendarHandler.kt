@@ -13,10 +13,8 @@ import nl.joozd.joozdter.data.JoozdlogLayoutOptions
 import nl.joozd.joozdter.data.JoozdterPrefs
 import nl.joozd.klcrosterparser.Activities
 import org.jetbrains.anko.doAsync
-import org.threeten.bp.Instant
-import org.threeten.bp.LocalDate
-import org.threeten.bp.ZoneId
-import org.threeten.bp.temporal.ChronoUnit
+import java.time.*
+import java.time.temporal.ChronoUnit
 
 class CalendarHandler(private val context: Context){
 
