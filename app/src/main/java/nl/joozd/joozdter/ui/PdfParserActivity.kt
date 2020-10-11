@@ -134,7 +134,7 @@ class PdfParserActivity : AppCompatActivity() {
 
                         //remove all events on days that are on current roster
                         val hotelEvent =
-                            calendarHandler.getHotelEvent(roster.days.map { it.date }.min()!!)
+                            calendarHandler.getHotelEvent(roster.days.map {day -> day.date }.minOrNull()!!)
 
                         runOnUiThread {
                             removingOldEvents.visibility = View.VISIBLE

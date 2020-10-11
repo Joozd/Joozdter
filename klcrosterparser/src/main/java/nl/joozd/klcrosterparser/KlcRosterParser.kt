@@ -17,6 +17,8 @@ import java.util.*
 
 class KlcRosterParser(inputStream: InputStream) {
     companion object{
+        private const val SIMULATOR_DUTY_STRING = "Simulator Duty"
+
         private const val endOfHeaderMarker = "date H duty R dep arr AC info date H duty R dep arr AC info date H duty R dep arr AC info"
         private const val dateRangeStartMarker = "Period: "
         private const val dateRangeEndMarker = " contract:"
@@ -360,11 +362,7 @@ class KlcRosterParser(inputStream: InputStream) {
                                         LocalTime.of(relevantTimes[1] / 100, relevantTimes[1] % 100)
                                     ).atZone(ZoneOffset.UTC).toInstant()
                                     todaysEvents.add(
-                                        KlcRosterEvent(
-                                            Activities.ACTUALSIM,
-                                            startTime,
-                                            endTime,
-                                            words[0]
+                                        KlcRosterEvent(Activities.ACTUALSIM, startTime, endTime, words[0], SIMULATOR_DUTY_STRING
                                         )
                                     )
                                 } else {

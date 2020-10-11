@@ -1,5 +1,6 @@
 package nl.joozd.joozdter.utils
 
+import android.util.Log
 import nl.joozd.joozdter.data.Event
 import nl.joozd.klcrosterparser.Activities
 import nl.joozd.klcrosterparser.RosterDay
@@ -38,14 +39,23 @@ fun parseEvents(rosterDays: List<RosterDay>): List<Event>{
                 val fdpLongMessage = "Max fdp: ${maxFDP.toMinutes()/60}:${(maxFDP.toMinutes()%60).toString().padStart(2,'0')}\nActual FDP: ${actualFdp.toMinutes()/60}:${(actualFdp.toMinutes()%60).toString().padStart(2,'0')}\n"
 
                 day.events.forEach {e ->
-                    if (e.type == Activities.CHECKIN) events.add(Event(e.type, e.description, e.start, e.end,  fdpMessage, fdpLongMessage + dayMessage + (e.extraMessage?: "")))
-                    else events.add(Event(e.type, e.description, e.start, e.end,  e.extraMessage?: "", "" ))
+                    events.add(when (e.type) {
+                        Activities.CHECKIN ->   Event(e.type, e.description, e.start, e.end, fdpMessage, fdpLongMessage + dayMessage + (e.extraMessage ?: "") )
+                        else -> Event(
+                                e.type,
+                                e.description,
+                                e.start,
+                                e.end,
+                                e.extraMessage ?: "",
+                                "")
+                    }.also{ Log.d("Added event", "$it from $e") }
+                    )
                 }
             }
             else -> {
                 val dayMessage = if (day.extraInfo.isNotEmpty()) day.extraInfo + '\n' else ""
                 day.events.forEach {e ->
-                    if (e === day.events.minBy { it.start }!!) events.add(Event(e.type, e.description, e.start, e.end,  dayMessage, e.extraMessage?: ""))
+                    if (e === day.events.minByOrNull { it.start }!!) events.add(Event(e.type, e.description, e.start, e.end,  dayMessage, e.extraMessage?: ""))
                     else events.add(Event(e.type, e.description, e.start, e.end,  e.extraMessage?: "", "" ))
                 }
             }
@@ -66,3 +76,4 @@ fun parseEvents(rosterDays: List<RosterDay>): List<Event>{
 
     return events.toList()
 }
+
