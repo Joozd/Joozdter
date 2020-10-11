@@ -23,6 +23,6 @@ private fun printMargin(margin: Duration): String = if (margin.toMinutes() >= 0)
         "${margin.toHours()}: ${margin.minusHours(margin.toHours()).toMinutes().toString().padStart(2,'0')}"
     else {
         val missingMargin = Duration.ofMinutes(margin.toMinutes() * -1)
-        "Short by ${missingMargin.toHours()}: ${missingMargin.minusHours(missingMargin.toHours()).toMinutes().toString().padStart(2,'0')}"
+        "!!!TOO SHORT BY ${missingMargin.toHours()}:${missingMargin.minusHours(missingMargin.toHours()).toMinutes().toString().padStart(2,'0')}!!!"
     }
 
