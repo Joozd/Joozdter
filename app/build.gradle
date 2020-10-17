@@ -11,8 +11,8 @@ android {
         applicationId "nl.joozd.joozdter"
         minSdkVersion 17
         targetSdkVersion 29
-        versionCode 22 // 11-10-2020
-        versionName "2.0.10"
+        versionCode 23 // 17-10-2020
+        versionName "2.0.11"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {

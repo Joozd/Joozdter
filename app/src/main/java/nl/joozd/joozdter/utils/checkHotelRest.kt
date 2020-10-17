@@ -11,7 +11,14 @@ import java.time.Duration
  * @return a pair of [extraData] to [notes] to be added to event
  */
 fun checkHotelRest(hotel: Event, taxi: Event): Pair<String, String>{
-    val actualRest = hotel.duration
+    /**
+     * Hotel time in roster is (C/O to Taxi)
+     * Taxi time is (pickup to C/I)
+     * Actual rest (C/O to C/I) is hotel time + taxi time
+     *
+     * Needed rest is 10hours + 2* (taxi time with a minimum of 30 mins)
+     */
+    val actualRest = hotel.duration + taxi.duration
     val neededRest = maxOf((Duration.ofHours(10) + taxi.duration + taxi.duration), Duration.ofHours(11))
     val margin = actualRest - neededRest
     return "Rest margin (CAO): ${printMargin(margin)}" to
