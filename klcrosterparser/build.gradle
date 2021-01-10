@@ -2,15 +2,14 @@ apply plugin: 'java-library'
 apply plugin: 'kotlin'
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation "com.itextpdf:itextg:5.5.10"
+    api fileTree(dir: 'libs', include: ['*.jar'])
+    api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    api "com.itextpdf:itextg:5.5.10"
 }
 
 sourceCompatibility = "8"
 targetCompatibility = "8"
 buildscript {
-    ext.kotlin_version = '1.4.10'
     repositories {
         mavenCentral()
     }

@@ -31,11 +31,11 @@ class KlcRosterParser(inputStream: InputStream) {
         private const val weekDay = "Mon|Tue|Wed|Thu|Fri|Sat|Sun"
         private const val carrier = "DH/[A-Z]{2}|WA|KL"
         private const val simString = "TSTR1|TSTR1H|TSTR2|TSTR2H|TSFCL|TSLOE|TSLOEH|TSOD|TSODH|TSACTI|TSACT"
-        private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD|LVE|WTV|IFLC|SLGC"
+        private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD|LVE|WTV|IFLC|SLGC|LCV"
         private const val standbyString = "RESH|RESK"
         private const val extraString = "TCRM|TCRMI|TCUG"
         private const val otherDutyString = "MMCS|TCBT|TGC|TFIE|TBEXI|OE"
-        private const val singleLineActivityString = standbyString + "|Pick"
+        private const val singleLineActivityString = "$standbyString|Pick"
         private const val defaultCheckoutTimeInSeconds = 30*60L
 
 
