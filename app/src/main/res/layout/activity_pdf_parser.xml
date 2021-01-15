@@ -4,7 +4,7 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".ui.PdfParserActivity">
+        tools:context=".ui.pdfParserActivity.PdfParserActivity">
 
     <TextView
             android:id="@+id/youDontHaveToWaitText"
@@ -38,50 +38,25 @@
             android:layout_marginTop="32dp"
             android:text="@string/itSeemsToBeARoster"
             android:visibility="invisible"
-            app:layout_constraintBottom_toTopOf="@+id/removingOldEvents"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/receivedFileText" />
 
     <TextView
-            android:id="@+id/removingOldEvents"
-            android:layout_width="wrap_content"
+            android:id="@+id/resultTextView"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="@string/removingOldEvents"
-            android:visibility="invisible"
-            app:layout_constraintBottom_toTopOf="@+id/addingNewText"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/itSeemsToBeARosterText" />
-
-    <TextView
-            android:id="@+id/addingNewText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="@string/addingNewEvents"
-            android:visibility="invisible"
-            app:layout_constraintBottom_toTopOf="@+id/doneText"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/removingOldEvents" />
-
-    <TextView
-            android:id="@+id/doneText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="@string/done"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:layout_marginBottom="24dp"
+            android:text="TextView"
+            android:textAlignment="center"
             android:visibility="invisible"
             app:layout_constraintBottom_toTopOf="@+id/closePdfParserActivityButton"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/addingNewText" />
+            app:layout_constraintTop_toBottomOf="@+id/itSeemsToBeARosterText" />
 
     <Button
             android:id="@+id/closePdfParserActivityButton"
@@ -92,6 +67,5 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/doneText" />
+            app:layout_constraintStart_toStartOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

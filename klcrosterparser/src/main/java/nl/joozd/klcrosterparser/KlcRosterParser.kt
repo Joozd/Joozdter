@@ -16,61 +16,36 @@ import java.util.*
  */
 
 class KlcRosterParser(inputStream: InputStream) {
-    companion object{
-        private const val SIMULATOR_DUTY_STRING = "Simulator Duty"
-
-        private const val endOfHeaderMarker = "date H duty R dep arr AC info date H duty R dep arr AC info date H duty R dep arr AC info"
-        private const val dateRangeStartMarker = "Period: "
-        private const val dateRangeEndMarker = " contract:"
-        private const val endOfRosterMarker = "Flight time"
-        private const val legendMarker = "Absence/Ground Activity Legend"
-        private const val hotelsMarker = "Hotels"
-        private const val hotelsEndMarker = "Recurrent Training / Checks"
-
-        private const val CLICK = "CLICK"
-        private const val weekDay = "Mon|Tue|Wed|Thu|Fri|Sat|Sun"
-        private const val carrier = "DH/[A-Z]{2}|WA|KL"
-        private const val simString = "TSTR1|TSTR1H|TSTR2|TSTR2H|TSFCL|TSLOE|TSLOEH|TSOD|TSODH|TSACTI|TSACT"
-        private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD|LVE|WTV|IFLC|SLGC|LCV"
-        private const val standbyString = "RESH|RESK"
-        private const val extraString = "TCRM|TCRMI|TCUG"
-        private const val otherDutyString = "MMCS|TCBT|TGC|TFIE|TBEXI|OE"
-        private const val singleLineActivityString = "$standbyString|Pick"
-        private const val defaultCheckoutTimeInSeconds = 30*60L
-
-
-        val dayRegEx = "($weekDay)\\d\\d".toRegex()
-        // eg. Wed04
-
-        val pickUpRegEx = "Pick Up \\d{4}".toRegex()
-        // eg. Pick Up 0345
-
-        val standbyRegEx = "($standbyString)\\s[A-Z]{3}\\s\\d{4}\\s\\d{4}".toRegex()
-        // eg. RESK AMS 0900 2100 (...)
-
-        val checkInRegex = "C/I\\s[A-Z]{3}\\s\\d{4}".toRegex()
-        // eg. C/I TRN 0435
-
-        val checkOutRegex = "C/O\\s\\d{4}\\s[A-Z]{3}\\s\\[FDP\\s\\d{2}:\\d{2}]".toRegex()
-        // eg. C/O 1040 TRN [FDP 04:50]
-
-        val flightRegex = "($carrier)\\s\\d+\\sR?\\s?[A-Z]{3}\\s\\d{4}\\s\\d{4}\\s[A-Z]{3}".toRegex()
-        //eg. KL 1582 BLQ 0400 0600 AMS E90 89113 RI -> KL 1582 BLQ 0400 0600 AMS / rest of line is extraMessage for that event
-
-        val simRegex = "$simString".toRegex()
-        // eg. TSACT
-
-        val otherRegex = "($otherDutyString)\\s[A-Z]{3}\\s\\d{4}\\s\\d{4}".toRegex()
-
-        val timeOffRegex = dayOffString.toRegex()
-
-    }
-
     private val legend = mutableMapOf<String, String>()
     private val hotels = mutableMapOf<String, String>()
-    var pageWithHotelsTEMP = ""
+
+    private val dayRegEx = "($weekDay)\\d\\d".toRegex()
+    // eg. Wed04
+
+    private val pickUpRegEx = "Pick Up \\d{4}".toRegex()
+    // eg. Pick Up 0345
+
+    private val standbyRegEx = "($standbyString)\\s[A-Z]{3}\\s\\d{4}\\s\\d{4}".toRegex()
+    // eg. RESK AMS 0900 2100 (...)
+
+    private val checkInRegex = "C/I\\s[A-Z]{3}\\s\\d{4}".toRegex()
+    // eg. C/I TRN 0435
+
+    private val checkOutRegex = "C/O\\s\\d{4}\\s[A-Z]{3}\\s\\[FDP\\s\\d{2}:\\d{2}]".toRegex()
+    // eg. C/O 1040 TRN [FDP 04:50]
+
+    private val flightRegex = "($carrier)\\s\\d+\\sR?\\s?[A-Z]{3}\\s\\d{4}\\s\\d{4}\\s[A-Z]{3}".toRegex()
+    //eg. KL 1582 BLQ 0400 0600 AMS E90 89113 RI -> KL 1582 BLQ 0400 0600 AMS / rest of line is extraMessage for that event
+
+    private val simRegex = simString.toRegex()
+    // eg. TSACT
+
+    private val otherRegex = "($otherDutyString)\\s[A-Z]{3}\\s\\d{4}\\s\\d{4}".toRegex()
+
+    private val timeOffRegex = dayOffString.toRegex()
 
     private val reader = PdfReader(inputStream)
+
     @Suppress("MemberVisibilityCanBePrivate")
     val header: String
     init{
@@ -80,9 +55,11 @@ class KlcRosterParser(inputStream: InputStream) {
                 firstPage.slice(0 until firstPage.indexOf(endOfHeaderMarker))
             else ""
     }
+
+    @Suppress("MemberVisibilityCanBePrivate")
     val seemsValid = header.isNotEmpty()
 
-    val text: String by lazy{
+    private val text: String by lazy{
         var completeString = ""
         repeat(reader.numberOfPages){pageNumber ->
             val pageText = PdfTextExtractor.getTextFromPage(reader, pageNumber+1, SimpleTextExtractionStrategy()).drop(header.length).trim()
@@ -99,7 +76,6 @@ class KlcRosterParser(inputStream: InputStream) {
 
             //fill hotels map
             if (hotelsMarker in pageText){
-                pageWithHotelsTEMP = pageText
                 val hotelsText = if (hotelsEndMarker in pageText)
                     pageText.slice(pageText.indexOf(hotelsMarker) until pageText.indexOf(hotelsEndMarker)).split("\n").drop(1)
                 else
@@ -190,7 +166,7 @@ class KlcRosterParser(inputStream: InputStream) {
              *      Can be a single word, then next line will be something like "B3 AMS 0615 0945 EMJ [FDP 00:00]"
              *      Any lines after that are notes, this gets added to named event (eg. TSACT) as extraMessage
              *      Sim dutie times (the TSLOE kind) are to be taken from header, as that includes briefing times.
-             * X: Day Over. No times; adds a day to previous days hotel TODO: will require rebuilding the previous day)
+             * X: Day Over. No times; adds a day to previous days hotel
              *      Next lines will be ignored
              * L???? / ALC: Leave / vacation. Only one event, starts at 0000 and ends 24 hrs later.
              * Other gets added as extraMessage to last Event found, if any, or discarded
@@ -246,6 +222,9 @@ class KlcRosterParser(inputStream: InputStream) {
                         todaysEvents.add(KlcRosterEvent(Activities.STANDBY, startTime, endTime, description))
                     }
 
+                    /**
+                     * event is [Activities.CHECKIN]
+                     */
                     checkInRegex.find(line) != null -> {
                         val words = checkInRegex.find(line)!!.value.split(" ")
                         val time = line.filter{it.isDigit()}.toInt()
@@ -272,6 +251,9 @@ class KlcRosterParser(inputStream: InputStream) {
                         todaysEvents.add(KlcRosterEvent(Activities.FLIGHT, startTime, endTime, description, extraInfo))
                     }
 
+                    /**
+                     * event is [Activities.CHECKOUT]
+                     */
                     checkOutRegex.find(line) != null -> {
                         val numbers = checkOutRegex.find(line)!!.value.filter{it in "0123456789 "}.trim().replace("\\s+".toRegex(), " ").split(" ")
                         val time = numbers[0].toInt()
@@ -279,7 +261,7 @@ class KlcRosterParser(inputStream: InputStream) {
                         val startTime = todaysEvents.maxBy { it.end }?.end ?: endTime.minusSeconds(defaultCheckoutTimeInSeconds)
                         val extraMessage = line.slice(line.indexOf("[")..line.indexOf("]"))
 
-                        todaysEvents.add(KlcRosterEvent(Activities.CHECKOUT, startTime, endTime, line))
+                        todaysEvents.add(KlcRosterEvent(Activities.CHECKOUT, startTime, endTime, line, extraMessage))
 
                         while (lines.isNotEmpty()){ // everything after checkOut is either Hotel, CLICK or extra info
                             @Suppress("NAME_SHADOWING") val line = lines[0]
@@ -376,13 +358,19 @@ class KlcRosterParser(inputStream: InputStream) {
                         }
                     }
 
+                    /**
+                     * Line is OTHER_DUTY
+                     * [startTime] = first number until second number
+                     * [description] = NETLINE_CODE ( description of that code)
+                     */
                     otherRegex.find(line) != null -> {
                         val words = line.split(" ")
-                        val numbers = line.filter{it in "0123456789 "}.trim().replace("\\s+".toRegex(), " ").split(" ").map{it.toInt()}.drop(1)
+                        val numbers = line.filter{it in "0123456789 "}.trim().replace("\\s+".toRegex(), " ").split(" ").map{it.toInt()}
                         val startTime = LocalDateTime.of(activeDate, LocalTime.of(numbers[0]/100, numbers[0]%100)).atZone(ZoneOffset.UTC).toInstant()
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(numbers[1]/100, numbers[1]%100)).atZone(ZoneOffset.UTC).toInstant()
-                        val description = if (legend[words[0]] != null) "$${words[0]} (${legend[line]})" else line
+                        val description = if (legend[words[0]] != null) "${words[0]} (${legend[words[0]]})" else line
                         todaysEvents.add(KlcRosterEvent(Activities.OTHER_DUTY, startTime, endTime, description))
+                        println("KlcRosterParser: \nline: $line\nnumbers: $numbers")
                     }
 
                     timeOffRegex.find(line) != null -> {
@@ -402,6 +390,9 @@ class KlcRosterParser(inputStream: InputStream) {
         }
         workingList.toList()
     }
+    val events: List<KlcRosterEvent>
+        get() = days.map{it.events}.flatten()
+
 
 
 
@@ -412,6 +403,33 @@ class KlcRosterParser(inputStream: InputStream) {
 
         //return either the only numbers in it, or the second group (as first will be flightnumber)
         return if (lineAsWords.size == 1) lineAsWords[0].toInt() else lineAsWords[1].toInt()
+    }
+
+    companion object{
+        private const val SIMULATOR_DUTY_STRING = "Simulator Duty"
+
+        private const val endOfHeaderMarker = "date H duty R dep arr AC info date H duty R dep arr AC info date H duty R dep arr AC info"
+        private const val dateRangeStartMarker = "Period: "
+        private const val dateRangeEndMarker = " contract:"
+        private const val endOfRosterMarker = "Flight time"
+        private const val legendMarker = "Absence/Ground Activity Legend"
+        private const val hotelsMarker = "Hotels"
+        private const val hotelsEndMarker = "Recurrent Training / Checks"
+
+        private const val CLICK = "CLICK"
+        private const val weekDay = "Mon|Tue|Wed|Thu|Fri|Sat|Sun"
+        private const val carrier = "DH/[A-Z]{2}|WA|KL"
+        private const val simString = "TSTR1|TSTR1H|TSTR2|TSTR2H|TSFCL|TSLOE|TSLOEH|TSOD|TSODH|TSACTI|TSACT"
+        private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD|LVE|WTV|IFLC|SLGC|LCV"
+        private const val standbyString = "RESH|RESK"
+        private const val extraString = "TCRM|TCRMI|TCUG"
+        private const val otherDutyString = "MMCS|TCBT|TGC|TFIE|TBEXI|OE"
+        private const val singleLineActivityString = "$standbyString|Pick"
+        private const val defaultCheckoutTimeInSeconds = 30*60L
+
+
+
+
     }
 
 }

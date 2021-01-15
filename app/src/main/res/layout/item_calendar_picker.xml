@@ -5,7 +5,7 @@
         xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:context=".ui.MainActivity" android:id="@+id/itemBackground">
+        tools:context=".ui.mainActivity.MainActivity" android:id="@+id/itemBackground">
     <TextView
             android:text="TextView"
             android:layout_width="match_parent"

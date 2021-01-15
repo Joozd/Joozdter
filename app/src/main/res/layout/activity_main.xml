@@ -6,7 +6,7 @@
         android:id="@+id/mainActivityLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".ui.PdfParserActivity">
+        tools:context=".ui.pdfParserActivity.PdfParserActivity">
 
     <ScrollView
             android:id="@+id/scrollView"
@@ -21,7 +21,7 @@
                 android:layout_height="match_parent"
                 android:background="@android:color/darker_gray"
                 android:padding="2dp"
-                tools:context=".ui.MainActivity">
+                tools:context=".ui.mainActivity.MainActivity">
 
             <TextView
                     android:id="@+id/textView"
@@ -87,7 +87,7 @@
                     app:layout_constraintStart_toStartOf="@+id/calendarPicker"
                     app:layout_constraintTop_toBottomOf="@+id/textView4" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/daysOffswitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -98,7 +98,7 @@
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/preferedLayoutSpinner" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/hotelSwitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -109,7 +109,7 @@
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/daysOffswitch" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/taxiSwitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -120,7 +120,7 @@
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/hotelSwitch" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/checkInSwitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -131,7 +131,7 @@
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/taxiSwitch" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/checkOutSwitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -142,7 +142,7 @@
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/checkInSwitch" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/flightsSwitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -153,7 +153,7 @@
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/checkOutSwitch" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/otherSwitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -164,7 +164,7 @@
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/flightsSwitch" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/simBriefingSwitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -175,7 +175,7 @@
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/otherSwitch" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/simActualSwitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -186,7 +186,7 @@
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/simBriefingSwitch" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/standbySwitch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"

@@ -1,5 +1,6 @@
-package nl.joozd.joozdter.data
+package nl.joozd.joozdter.model
 
+import nl.joozd.klcrosterparser.KlcRosterEvent
 import java.time.Instant
 import java.time.Duration
 
@@ -10,7 +11,7 @@ import java.time.Duration
  * @param startTime: Start time of event
  * @param endTime: End time of event
  * @param extraData: Extra data, this till end up in event's location so it will show up on overview
- * @param notes: Notes for activity, this will include "Inserted by Joozdter" marker
+ * @param notes: Notes for activity, this will include "Inserted by Joozdter" marker (inserted by CalendarHandler)
  * @param _id: id for keeping track of retrieved events from calendar, to be able to delete them.
  */
 
@@ -19,6 +20,6 @@ data class Event (val eventType: String, val description: String, val startTime:
         get() = startTime.toEpochMilli()
     val endInstant: Long
         get() = endTime.toEpochMilli()
-    val duration = Duration.between(startTime, endTime)
+    val duration: Duration = Duration.between(startTime, endTime)
     override fun toString() = "Event: $eventType / $description / start: $startTime / end: $endTime"
 }

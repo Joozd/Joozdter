@@ -1,6 +1,6 @@
 package nl.joozd.joozdter.utils
 
-import nl.joozd.joozdter.data.Event
+import nl.joozd.joozdter.model.Event
 import java.time.Duration
 
 /**

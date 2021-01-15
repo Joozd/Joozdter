@@ -12,7 +12,6 @@ import java.time.*
 
 fun fdpChecker(start: Instant, end: Instant, sectors: Int, timeZone: ZoneId ): Duration{
     val startTime = start.atZone(timeZone).toLocalDateTime()
-    val duration = Duration.between(start, end)
     val uncorrectedMax: Duration = when(startTime.toLocalTime()){
         in (LocalTime.of(6,0)..LocalTime.of(13,29)) ->      Duration.ofHours(13)
 
@@ -40,10 +39,8 @@ fun fdpChecker(start: Instant, end: Instant, sectors: Int, timeZone: ZoneId ): D
 
         else -> Duration.ofHours(11)
     }
-    val correctionForSectors = when (sectors) {
-        0, 1, 2 -> Duration.ofMinutes(0)
-        else -> Duration.ofMinutes(30L * (sectors - 2))
-    }
+    val correctionForSectors = Duration.ofMinutes(maxOf(0L, 30L * (sectors - 2)))
+
     return maxOf(Duration.ofHours(9), uncorrectedMax - correctionForSectors)
 
 
