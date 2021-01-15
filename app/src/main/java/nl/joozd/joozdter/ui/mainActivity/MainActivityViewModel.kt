@@ -51,24 +51,18 @@ class MainActivityViewModel: JoozdterViewModel() {
      */
 
     fun daysOffswitchClicked() {
-        println("DEBUG 1: ${JoozdterPrefs.leave}")
         JoozdterPrefs.leave = !JoozdterPrefs.leave
-        println("DEBUG 2: ${JoozdterPrefs.leave}")
     }
     fun taxiSwitchClicked(){
-        println("taxiSwitchClicked")
         JoozdterPrefs.taxi = !JoozdterPrefs.taxi
     }
     fun checkInSwitchClicked(){
-        println("checkInSwitchClicked")
         JoozdterPrefs.checkIn = !JoozdterPrefs.checkIn
     }
     fun checkOutSwitchClicked(){
-        println("checkOutSwitchClicked")
         JoozdterPrefs.checkOut = !JoozdterPrefs.checkOut
     }
     fun flightsSwitchClicked(){
-        println("flightsSwitchClicked")
         JoozdterPrefs.flight = !JoozdterPrefs.flight
     }
     fun hotelSwitchClicked(){
@@ -129,7 +123,6 @@ class MainActivityViewModel: JoozdterViewModel() {
 
 
     private val onSharedPrefsChangedListener =  SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        println("SharedPrefs updated: $key")
         when (key) {
             JoozdterPrefs::pickedCalendar.name -> _calendarName.value = JoozdterPrefs.pickedCalendar
 

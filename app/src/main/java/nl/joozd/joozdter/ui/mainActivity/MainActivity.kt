@@ -108,7 +108,6 @@ class MainActivity : JoozdterActivity() {
 
                 //toggle switches:
                 viewModel.leave.observe(activity){
-                    println("LEAVE: $it")
                     daysOffswitch.bypassedIsChecked = it
                 }
                 viewModel.taxi.observe(activity){

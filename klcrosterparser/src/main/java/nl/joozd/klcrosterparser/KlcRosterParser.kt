@@ -370,7 +370,6 @@ class KlcRosterParser(inputStream: InputStream) {
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(numbers[1]/100, numbers[1]%100)).atZone(ZoneOffset.UTC).toInstant()
                         val description = if (legend[words[0]] != null) "${words[0]} (${legend[words[0]]})" else line
                         todaysEvents.add(KlcRosterEvent(Activities.OTHER_DUTY, startTime, endTime, description))
-                        println("KlcRosterParser: \nline: $line\nnumbers: $numbers")
                     }
 
                     timeOffRegex.find(line) != null -> {

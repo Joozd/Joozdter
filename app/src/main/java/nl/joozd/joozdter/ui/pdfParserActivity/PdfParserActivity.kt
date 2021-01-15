@@ -75,7 +75,6 @@ class PdfParserActivity : JoozdterActivity() {
         resultTextView.text = text
         resultTextView.visibility = View.VISIBLE
         closePdfParserActivityButton.visibility = View.VISIBLE
-        println("Done!XXXXXXXXAUBGRGR")
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
