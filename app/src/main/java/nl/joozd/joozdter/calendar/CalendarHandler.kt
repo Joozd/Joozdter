@@ -6,11 +6,9 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.provider.CalendarContract
-import android.util.Log
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 import nl.joozd.joozdter.model.Event
-import nl.joozd.joozdter.data.JoozdlogLayoutOptions
 import nl.joozd.joozdter.data.JoozdterPrefs
 import nl.joozd.klcrosterparser.Activities
 import java.time.*
@@ -18,7 +16,6 @@ import java.time.temporal.ChronoUnit
 
 /**
  * CalendarHandler will take care of handling things in devices calendar.
- * It will create its own [coroutineContext] and should keep running even when parent is closed.
  * @param context: context to get contentResolver from
  */
 class CalendarHandler(private val context: Context) {
@@ -90,6 +87,7 @@ class CalendarHandler(private val context: Context) {
         true
     } ?: false
 
+    /*
     fun getEventsTouching(dateInstant: Instant): List<Event> {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
             != PackageManager.PERMISSION_GRANTED) return emptyList()
@@ -134,6 +132,7 @@ class CalendarHandler(private val context: Context) {
         }
         return foundEvents
     }
+    */
 
 
     fun getEventsStartingOn(dateInstant: Instant): List<Event> {
@@ -183,7 +182,7 @@ class CalendarHandler(private val context: Context) {
         return foundEvents
     }
 
-    fun getEventsEndingOn(dateInstant: Instant): List<Event> {
+    /* fun getEventsEndingOn(dateInstant: Instant): List<Event> {
         val foundEvents: MutableList<Event> = mutableListOf()
 
         activeCalendar?.let {
@@ -224,6 +223,7 @@ class CalendarHandler(private val context: Context) {
         }
         return foundEvents
     }
+    */
 
     suspend fun deleteEvents(eventsList: List<Event>) = withContext (Dispatchers.IO){
         eventsList.forEach {
@@ -239,31 +239,7 @@ class CalendarHandler(private val context: Context) {
     suspend fun insertEvents(eventsList: List<Event>) = withContext(Dispatchers.IO){
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
             != PackageManager.PERMISSION_GRANTED) return@withContext
-        eventsList.forEach{ originalEvent ->
-            // check event type and if that is to be calendarized:
-            var event = originalEvent
-            when (event.eventType){
-                Activities.LEAVE, Activities.OTHER_DUTY, Activities.SIM, Activities.STANDBY -> {
-                    when (JoozdterPrefs.preferedLayout) {
-                        JoozdlogLayoutOptions.CODE -> event = event.copy(
-                            description = event.description.split(
-                                " "
-                            ).firstOrNull() ?: event.description
-                        )
-                        JoozdlogLayoutOptions.DECODED -> {
-                            val description = if (event.description.split(" ").size > 1)
-                                if (event.description.split(" ").drop(1).joinToString(" ")
-                                        .trim().length > 1
-                                ) event.description.split(
-                                    " "
-                                ).drop(1).joinToString(" ").trim().drop(1).dropLast(1)
-                                else event.description
-                            else event.description
-                            event = event.copy(description = description)
-                        }
-                    }
-                }
-            }
+        eventsList.forEach{ event ->
             val values = ContentValues().apply {
                 put(CalendarContract.Events.DTSTART, event.startInstant)
                 put(CalendarContract.Events.DTEND, event.endInstant)
@@ -285,8 +261,6 @@ class CalendarHandler(private val context: Context) {
     }
 
     companion object{
-        const val DEBUG_TAG = "DELETERT"
-
         // The indices for the projection array below.
         private const val PROJECTION_ID_INDEX: Int = 0
         private const val PROJECTION_ACCOUNT_NAME_INDEX: Int = 1
@@ -328,5 +302,4 @@ class CalendarHandler(private val context: Context) {
             CalendarContract.Events.DELETED                     // 8
         )
     }
-
 }

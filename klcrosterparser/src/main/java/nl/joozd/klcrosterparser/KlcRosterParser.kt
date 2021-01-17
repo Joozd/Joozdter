@@ -165,7 +165,7 @@ class KlcRosterParser(inputStream: InputStream) {
              *      Can be single line, it will have times in that case.
              *      Can be a single word, then next line will be something like "B3 AMS 0615 0945 EMJ [FDP 00:00]"
              *      Any lines after that are notes, this gets added to named event (eg. TSACT) as extraMessage
-             *      Sim dutie times (the TSLOE kind) are to be taken from header, as that includes briefing times.
+             *      Sim duty times (the TSLOE kind) are to be taken from header, as that includes briefing times.
              * X: Day Over. No times; adds a day to previous days hotel
              *      Next lines will be ignored
              * L???? / ALC: Leave / vacation. Only one event, starts at 0000 and ends 24 hrs later.

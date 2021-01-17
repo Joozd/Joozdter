@@ -1,6 +1,8 @@
 package nl.joozd.joozdter.model.extensions
 
 import android.util.Log
+import nl.joozd.joozdter.data.JoozdterLayoutOptions
+import nl.joozd.joozdter.data.JoozdterPrefs
 import nl.joozd.joozdter.model.Event
 import nl.joozd.joozdter.utils.fdpChecker
 import nl.joozd.klcrosterparser.Activities
@@ -67,6 +69,33 @@ fun List<Event>.addCAORest(): List<Event>{
         }
     }
     return newHotelEvents + filter {it !in hotelEvents}
+}
+
+fun List<Event>.setPreferredDescription(): List<Event> = map{ event ->
+    when (event.eventType){
+        Activities.LEAVE, Activities.OTHER_DUTY, Activities.SIM, Activities.STANDBY -> {
+            when (JoozdterPrefs.preferedLayout) {
+                JoozdterLayoutOptions.CODE -> event.copy(
+                    description = event.description.split(
+                        " "
+                    ).firstOrNull() ?: event.description
+                )
+                JoozdterLayoutOptions.DECODED -> {
+                    val description = if (event.description.split(" ").size > 1)
+                        if (event.description.split(" ").drop(1).joinToString(" ")
+                                .trim().length > 1
+                        ) event.description.split(
+                            " "
+                        ).drop(1).joinToString(" ").trim().drop(1).dropLast(1)
+                        else event.description
+                    else event.description
+                    event.copy(description = description)
+                }
+                else -> event // JoozdterLayoutOptions.FULL is only other possibility
+            }
+        }
+        else -> event
+    }
 }
 
 private fun Long.minutesToString() = "${this/60}:${(this%60).toString().padStart(2, '0')}"

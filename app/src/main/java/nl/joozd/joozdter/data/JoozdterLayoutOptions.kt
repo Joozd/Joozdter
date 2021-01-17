@@ -1,6 +1,6 @@
 package nl.joozd.joozdter.data
 
-object JoozdlogLayoutOptions {
+object JoozdterLayoutOptions {
     const val NONE = 0
     const val CODE = 1
     const val DECODED = 2

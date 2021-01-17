@@ -9,11 +9,17 @@ import androidx.work.WorkManager
 import nl.joozd.joozdter.App
 import java.time.Instant
 
+/**
+ * Repository for starting workers.
+ */
 object JoozdterWorkersHub {
     /**
+     * Updates calendar: clears Joozdter events from [startInstant] until [endInstant] and
+     * inserts all events in [uri]
+     * TODO: startInstant and endInstant can be removed as that information is in the roster
      * @param startInstant: Start instant of this roster (ie. when to start removing old data)
      * @param endInstant: End instant of this roster (ie. when to stop removing old data)
-     * @param events: collapsed list of all events to be inserted (@see collapseDataList)
+     * @param uri: uri pointing to a KLC Roster PDF
      */
     fun updateCalendar(startInstant: Instant, endInstant: Instant, uri: Uri){
 

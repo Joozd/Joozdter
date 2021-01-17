@@ -103,9 +103,6 @@ class MainActivityViewModel: JoozdterViewModel() {
         get() = _other
 
 
-
-
-
     private val calendarHandler = CalendarHandler(context).apply {
         viewModelScope.launch{
             initialize {
@@ -114,13 +111,6 @@ class MainActivityViewModel: JoozdterViewModel() {
                 }
             }
         }
-
-
-
-
-
-
-
 
     private val onSharedPrefsChangedListener =  SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {

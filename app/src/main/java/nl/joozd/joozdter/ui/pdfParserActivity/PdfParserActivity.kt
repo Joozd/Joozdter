@@ -23,7 +23,6 @@ class PdfParserActivity : JoozdterActivity() {
 
         ActivityPdfParserBinding.inflate(layoutInflater).apply {
 
-
             //check if permissions are OK, ask if they aren't:
             while (ContextCompat.checkSelfPermission(activity, Manifest.permission.WRITE_CALENDAR)
                 != PackageManager.PERMISSION_GRANTED

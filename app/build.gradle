@@ -8,8 +8,8 @@ android {
         applicationId "nl.joozd.joozdter"
         minSdkVersion 17
         targetSdkVersion 30
-        versionCode 26 // 15-01-2021
-        versionName "3.0"
+        versionCode 27 // 17-01-2021
+        versionName "3.0.1" // small code update, nothing new
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
