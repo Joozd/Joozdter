@@ -40,6 +40,8 @@ class KlcRosterParser(inputStream: InputStream) {
     private val simRegex = simString.toRegex()
     // eg. TSACT
 
+    private val actualSimRegex = actualSimString.toRegex()
+
     private val otherRegex = "($otherDutyString)\\s[A-Z]{3}\\s\\d{4}\\s\\d{4}".toRegex()
 
     private val timeOffRegex = dayOffString.toRegex()
@@ -317,7 +319,7 @@ class KlcRosterParser(inputStream: InputStream) {
                     }
 
                     simRegex.find(line) != null -> {
-                        // get start and end times from header (go to dayString, then chop into words, 3rd and 4th word are startt and end time)
+                        // get start and end times from header (go to dayString, then chop into words, 3rd and 4th word are start and end time)
                         val relevantTimes = header.drop(header.indexOf(dayString)).split("\n").take(4).drop(2).map{it.toInt()}
                         val startTime = LocalDateTime.of(activeDate, LocalTime.of(relevantTimes[0]/100, relevantTimes[0]%100)).atZone(ZoneOffset.UTC).toInstant()
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(relevantTimes[1]/100, relevantTimes[1]%100)).atZone(ZoneOffset.UTC).toInstant()
@@ -330,11 +332,12 @@ class KlcRosterParser(inputStream: InputStream) {
                             val words = line.trim().replace("\\s+".toRegex(), " ").split(" ").filter{it.isNotEmpty()}
                             if (words.isEmpty()) continue
 
-                                if (words[0][0].isUpperCase() && words[0][1].isDigit() && words[0].length == 2) { // line is actual sim
+                                //if (words[0][0].isUpperCase() && words[0][1].isDigit() && words[0].length == XXXX2) { // line is actual sim
+                                if (actualSimRegex matches words[0]) { // line is actual sim
                                     @Suppress("NAME_SHADOWING") val relevantTimes =
-                                        line.filter { it in "0123456789 " }.trim()
+                                        words.drop(1).joinToString(" ").filter { it in "0123456789 " }.trim()
                                             .replace("\\s+".toRegex(), " ").split(" ")
-                                            .map { it.toInt() }.drop(1)
+                                            .map { it.toInt() }
                                     @Suppress("NAME_SHADOWING") val startTime = LocalDateTime.of(
                                         activeDate,
                                         LocalTime.of(relevantTimes[0] / 100, relevantTimes[0] % 100)
@@ -348,8 +351,6 @@ class KlcRosterParser(inputStream: InputStream) {
                                         )
                                     )
                                 } else {
-
-
                                     if (todaysExtraInfo.isNotEmpty()) todaysExtraInfo += "\n"
                                     todaysExtraInfo += line
                                 }
@@ -360,8 +361,8 @@ class KlcRosterParser(inputStream: InputStream) {
 
                     /**
                      * Line is OTHER_DUTY
-                     * [startTime] = first number until second number
-                     * [description] = NETLINE_CODE ( description of that code)
+                     * startTime = first number until second number
+                     * description = NETLINE_CODE ( description of that code)
                      */
                     otherRegex.find(line) != null -> {
                         val words = line.split(" ")
@@ -418,7 +419,10 @@ class KlcRosterParser(inputStream: InputStream) {
         private const val CLICK = "CLICK"
         private const val weekDay = "Mon|Tue|Wed|Thu|Fri|Sat|Sun"
         private const val carrier = "DH/[A-Z]{2}|WA|KL"
-        private const val simString = "TSTR1|TSTR1H|TSTR2|TSTR2H|TSFCL|TSLOE|TSLOEH|TSOD|TSODH|TSACTI|TSACT"
+        private const val simString = "T[A-Z]{2,4}[0-9]?H?"
+        //private const val simString = "TSTR1|TSTR1H|TSTR2|TSTR2H|TSFCL|TSLOE|TSLOEH|TSOD|TSODH|TSACTI|TSACT|TLCY"
+        private const val actualSimString = "([A-Z]{2}\\d)_([A-Z]\\d)"
+
         private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD|LVE|WTV|IFLC|SLGC|LCV"
         private const val standbyString = "RESH|RESK"
         private const val extraString = "TCRM|TCRMI|TCUG"
