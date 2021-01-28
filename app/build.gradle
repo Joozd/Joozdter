@@ -8,8 +8,8 @@ android {
         applicationId "nl.joozd.joozdter"
         minSdkVersion 17
         targetSdkVersion 30
-        versionCode 27 // 17-01-2021
-        versionName "3.0.1" // small code update, nothing new
+        versionCode 30// 28-01-2021
+        versionName "3.0.3" // Support TLCY and new sim codes
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
