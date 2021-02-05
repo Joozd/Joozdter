@@ -170,7 +170,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:includeFontPadding="false"
-                    android:text="@string/showSimBriefing"
+                    android:text="@string/showTraining"
                     app:layout_constraintEnd_toEndOf="@+id/daysOffswitch"
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/otherSwitch" />
