@@ -82,7 +82,7 @@
     <string name="showCheckOut">Show Check Out</string>
     <string name="showFlights">Show Flights</string>
     <string name="showOtherDuties">Show Other Duties</string>
-    <string name="showSimBriefing">Show Simulator Briefing Time</string>
+    <string name="showTraining">Show Training</string>
     <string name="showActualSimTime">Show Actual Simulator Time</string>
     <string name="comingSoonMyLogbookApp">Coming Soon: JoozdLog Pilot\'s Logbook app</string>
     <string name="helloNewUser">Hellon new user!</string>
@@ -100,8 +100,8 @@
     <string name="receivedFile">Received File…</string>
     <string name="itSeemsToBeARoster">It seems to be a roster!</string>
     <string name="youDontHaveToWait">(You don\'t have to wait for this)</string>
-    <string name="removingOldEvents">Removing old events...</string>
-    <string name="addingNewEvents">Adding new events...</string>
+    <string name="removingOldEvents">Removing old events…</string>
+    <string name="addingNewEvents">Adding new events…</string>
     <string name="done">Done!</string>
     <string name="eventLayoutPickerPrompt">Pick a layout for entries</string>
     <string-array name="eventLayouts">
