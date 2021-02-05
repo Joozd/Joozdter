@@ -37,7 +37,7 @@ class KlcRosterParser(inputStream: InputStream) {
     private val flightRegex = "($carrier)\\s\\d+\\sR?\\s?[A-Z]{3}\\s\\d{4}\\s\\d{4}\\s[A-Z]{3}".toRegex()
     //eg. KL 1582 BLQ 0400 0600 AMS E90 89113 RI -> KL 1582 BLQ 0400 0600 AMS / rest of line is extraMessage for that event
 
-    private val simRegex = simString.toRegex()
+    private val trainingRegex = trainingString.toRegex()
     // eg. TSACT
 
     private val actualSimRegex = actualSimString.toRegex()
@@ -102,7 +102,7 @@ class KlcRosterParser(inputStream: InputStream) {
             val dateRangeString = header.slice(header.indexOf(dateRangeStartMarker)+ dateRangeStartMarker.length until header.indexOf(dateRangeEndMarker))
             val startEnd = dateRangeString.split(" - ")
             startOfRoster = LocalDateTime.of (LocalDate.parse(startEnd[0], DateTimeFormatter.ofPattern("ddMMMyy", Locale.US)), LocalTime.MIDNIGHT).atZone(ZoneOffset.UTC).toInstant()
-            endOfRoster = LocalDateTime.of (LocalDate.parse(startEnd[1], DateTimeFormatter.ofPattern("ddMMMyy", Locale.US)), LocalTime.MIDNIGHT).atZone(ZoneOffset.UTC).toInstant()
+            endOfRoster = LocalDateTime.of (LocalDate.parse(startEnd[1], DateTimeFormatter.ofPattern("ddMMMyy", Locale.US)), LocalTime.MIDNIGHT).atZone(ZoneOffset.UTC).plusDays(1).toInstant()
         }
     }
 
@@ -318,7 +318,7 @@ class KlcRosterParser(inputStream: InputStream) {
                         }
                     }
 
-                    simRegex.find(line) != null -> {
+                    trainingRegex.find(line) != null -> {
                         // get start and end times from header (go to dayString, then chop into words, 3rd and 4th word are start and end time)
                         val relevantTimes = header.drop(header.indexOf(dayString)).split("\n").take(4).drop(2).map{it.toInt()}
                         val startTime = LocalDateTime.of(activeDate, LocalTime.of(relevantTimes[0]/100, relevantTimes[0]%100)).atZone(ZoneOffset.UTC).toInstant()
@@ -419,12 +419,12 @@ class KlcRosterParser(inputStream: InputStream) {
         private const val CLICK = "CLICK"
         private const val weekDay = "Mon|Tue|Wed|Thu|Fri|Sat|Sun"
         private const val carrier = "DH/[A-Z]{2}|WA|KL"
-        private const val simString = "T[A-Z]{2,4}[0-9]?H?"
+        private const val trainingString = "T[A-Z]{2,4}[0-9]?H?"
         //private const val simString = "TSTR1|TSTR1H|TSTR2|TSTR2H|TSFCL|TSLOE|TSLOEH|TSOD|TSODH|TSACTI|TSACT|TLCY"
         private const val actualSimString = "([A-Z]{2}\\d)_([A-Z]\\d)"
 
-        private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD|LVE|WTV|IFLC|SLGC|LCV"
-        private const val standbyString = "RESH|RESK"
+        private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD|LVE|WTV|IFLC|SLGC|LCV|IGC"
+        private const val standbyString = "RES[A-Z]"
         private const val extraString = "TCRM|TCRMI|TCUG"
         private const val otherDutyString = "MMCS|TCBT|TGC|TFIE|TBEXI|OE"
         private const val singleLineActivityString = "$standbyString|Pick"
