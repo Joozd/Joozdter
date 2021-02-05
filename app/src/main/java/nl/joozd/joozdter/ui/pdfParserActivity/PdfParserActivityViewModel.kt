@@ -89,7 +89,12 @@ class PdfParserActivityViewModel: JoozdterViewModel() {
                      * Unfortunately, I cannot fit all them bytes into a Data object.
                      * So we'll just send the URI and parse it again in worker.
                      */
-                    JoozdterWorkersHub.updateCalendar(parsedRoster.startOfRoster!!, parsedRoster.endOfRoster!!, uri)
+                    println("Got roster:\n" +
+                            "start: ${parsedRoster.startOfRoster}\n" +
+                            "end: ${parsedRoster.endOfRoster}\n" +
+                            "Contents: ${parsedRoster.events}"
+                    )
+                    JoozdterWorkersHub.updateCalendar(uri)
                     feedback(PdfParserActivityEvents.DONE)
                 }
             }
