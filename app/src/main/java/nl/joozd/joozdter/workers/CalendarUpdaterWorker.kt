@@ -21,16 +21,16 @@ import java.time.Instant
 
 /**
  * This will do the whole calendar-related part of the "adding roster to calendar" thing.
- * expects [inputData] with a startInstant (epochseconds), endInstant and an uri to a KLC roster
- * TODO: get start and end from roster
+ * expects InputData with an uri to a KLC roster
  */
 class CalendarUpdaterWorker(appContext: Context, workerParams: WorkerParameters):
     CoroutineWorker(appContext, workerParams) {
 
     @Suppress("BlockingMethodInNonBlockingContext")
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val start = Instant.ofEpochSecond(inputData.getLong(START_TAG, 0))
-        val end = Instant.ofEpochSecond(inputData.getLong(END_TAG, 0))
+
+        //val start = Instant.ofEpochSecond(inputData.getLong(START_TAG, 0))
+        //val end = Instant.ofEpochSecond(inputData.getLong(END_TAG, 0))
         val uri = Uri.parse(inputData.getString(URI_TAG))
 
         // get inputstream from URI
@@ -51,6 +51,8 @@ class CalendarUpdaterWorker(appContext: Context, workerParams: WorkerParameters)
             Log.e(THIS, "bad file received")
             return@withContext Result.failure()
         }
+        val start = parsedRoster.startOfRoster!!
+        val end = parsedRoster.endOfRoster!!
 
         //add notes to checkin or to first event on that day
         val days = parsedRoster.days.map { it.addNotesToCorrectEvent() }
@@ -62,7 +64,7 @@ class CalendarUpdaterWorker(appContext: Context, workerParams: WorkerParameters)
             .setPreferredDescription()      // set preferred name (eg. "LVEC" or "LVEC (Leave 5C)")
 
         /**
-         * Filter flights from [JoozdterPrefs]
+         * Filter flights from JoozdterPrefs
          * This should be done after processing (eg. max FDP and CAO rest) because those functions
          * might need data in an event that gets filtered out.
          */
