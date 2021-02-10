@@ -9,7 +9,7 @@ android {
         minSdkVersion 17
         targetSdkVersion 30
         versionCode 31// 10-02-2021
-        versionName "3.0.4" // Support TLCY and new sim codes
+        versionName "3.0.4" // support IGN as 'day off' and updated work library
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
