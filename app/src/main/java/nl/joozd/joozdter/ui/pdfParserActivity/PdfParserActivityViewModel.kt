@@ -21,6 +21,15 @@ class PdfParserActivityViewModel: JoozdterViewModel() {
     private val calendarHandler = CalendarHandler(context)
     private val initializationMutex = Mutex()
     private var mIntent: Intent? = null
+    private val countDownMutex = Mutex()
+
+    private val _progressCountDown = MutableLiveData(4)
+    val progressCountDown: LiveData<Int>
+        get() = _progressCountDown
+
+    private var progress: Int
+        get() = _progressCountDown.value!!
+        set(it) { viewModelScope.launch(Dispatchers.Main) { _progressCountDown.value = it } }
 
     /**
      * Parsing of intent should be triggered by [calendarWorkerReady]
@@ -43,6 +52,7 @@ class PdfParserActivityViewModel: JoozdterViewModel() {
                     feedback(PdfParserActivityEvents.NO_VALID_CALENDAR_PICKED)
                 }
                 else _calendarWorkerReady.postValue(true)
+                countDownMutex.withLock {progress = 3}
             }
         }
     }
@@ -72,6 +82,7 @@ class PdfParserActivityViewModel: JoozdterViewModel() {
                         return@launch
                     }
                     _fileReceived.postValue(true)
+                    countDownMutex.withLock {progress = 2}
 
                     //parse inputstream as roster:
 
@@ -81,6 +92,7 @@ class PdfParserActivityViewModel: JoozdterViewModel() {
                         return@launch
                     }
                     _seemsToBeARoster.postValue(true)
+                    countDownMutex.withLock {progress = 1}
 
 
                     /**
@@ -95,6 +107,7 @@ class PdfParserActivityViewModel: JoozdterViewModel() {
                             "Contents: ${parsedRoster.events}"
                     )
                     JoozdterWorkersHub.updateCalendar(uri)
+                    countDownMutex.withLock {progress = 0}
                     feedback(PdfParserActivityEvents.DONE)
                 }
             }

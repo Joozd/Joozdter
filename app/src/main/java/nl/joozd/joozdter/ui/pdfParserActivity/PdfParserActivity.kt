@@ -1,6 +1,7 @@
 package nl.joozd.joozdter.ui.pdfParserActivity
 
 import android.Manifest
+import android.animation.ValueAnimator
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -9,6 +10,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import nl.joozd.joozdter.R
 import nl.joozd.joozdter.databinding.ActivityPdfParserBinding
 import nl.joozd.joozdter.ui.mainActivity.MainActivity
 import nl.joozd.joozdter.ui.utils.FeedbackEvents.PdfParserActivityEvents
@@ -17,6 +19,12 @@ import nl.joozd.joozdter.ui.utils.JoozdterActivity
 class PdfParserActivity : JoozdterActivity() {
     private val viewModel: PdfParserActivityViewModel by viewModels()
     private var mDialogShown: AlertDialog? = null // needs to be dismissed or dialog will be leaked
+
+    private var bigNumberAnimator: ValueAnimator? = null
+        set(it){
+            bigNumberAnimator?.end()
+            field = it
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,7 +43,7 @@ class PdfParserActivity : JoozdterActivity() {
             }
 
             /**
-             * Onclicklisteners
+             * OnClickisteners
              */
             closePdfParserActivityButton.setOnClickListener { finish() }
 
@@ -49,11 +57,15 @@ class PdfParserActivity : JoozdterActivity() {
             }
 
             viewModel.fileReceived.observe(activity){
-                receivedFileText.visibility = if (it) View.VISIBLE else View.INVISIBLE
+                progressTextView.text = getString(R.string.receivedFile)
             }
 
             viewModel.seemsToBeARoster.observe(activity){
-                itSeemsToBeARosterText.visibility = if (it) View.VISIBLE else View.INVISIBLE
+                progressTextView.text = getString(R.string.itSeemsToBeARoster)
+            }
+
+            viewModel.progressCountDown.observe(activity){
+                updateBigNumber(it)
             }
 
 
@@ -70,10 +82,23 @@ class PdfParserActivity : JoozdterActivity() {
         }
     }
 
+    private fun ActivityPdfParserBinding.updateBigNumber(number: Int){
+        countDownCounter.text = if (number == 0) getString(R.string.checkMark) else number.toString()
+        bigNumberAnimator = ValueAnimator.ofFloat(BIG_NUMBER_SCALE_FACTOR, 1.0f).apply {
+            addUpdateListener {
+                countDownCounter.scaleX = it.animatedValue as Float
+                countDownCounter.scaleY = it.animatedValue as Float
+            }
+            duration = 250
+            start()
+        }
+
+    }
+
     private fun ActivityPdfParserBinding.done(text: String){
-        resultTextView.text = text
-        resultTextView.visibility = View.VISIBLE
+        progressTextView.text = text
         closePdfParserActivityButton.visibility = View.VISIBLE
+        backgroundLayout.setOnClickListener { finish() }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
@@ -89,6 +114,10 @@ class PdfParserActivity : JoozdterActivity() {
     override fun onStop() {
         mDialogShown?.dismiss()
         super.onStop()
+    }
+
+    companion object{
+        private const val BIG_NUMBER_SCALE_FACTOR = 2.0f
     }
 }
 

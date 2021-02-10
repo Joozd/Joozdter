@@ -103,6 +103,7 @@
     <string name="removingOldEvents">Removing old events…</string>
     <string name="addingNewEvents">Adding new events…</string>
     <string name="done">Done!</string>
+    <string name="checkMark">✓</string>
     <string name="eventLayoutPickerPrompt">Pick a layout for entries</string>
     <string-array name="eventLayouts">
         <item>TSACT</item>
