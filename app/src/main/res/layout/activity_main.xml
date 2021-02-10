@@ -17,9 +17,9 @@
             tools:layout_editor_absoluteY="317dp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
+                style="@style/mainActivityStyle"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@android:color/darker_gray"
+                android:layout_height="wrap_content"
                 android:padding="2dp"
                 tools:context=".ui.mainActivity.MainActivity">
 
@@ -41,7 +41,7 @@
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="8dp"
                     android:layout_marginEnd="8dp"
-                    android:background="#90FFFFFF"
+                    android:background="@drawable/rounded_corners"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/textView" />
@@ -74,18 +74,26 @@
                     app:layout_constraintStart_toStartOf="@+id/calendarPicker"
                     app:layout_constraintTop_toBottomOf="@+id/textView2" />
 
-            <Spinner
-                    android:id="@+id/preferedLayoutSpinner"
+            <FrameLayout
+                    android:id="@+id/preferedLayoutSpinnerLayout"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
                     android:background="@drawable/rounded_corners"
-                    android:entries="@array/eventLayouts"
                     android:padding="2dp"
-                    android:prompt="@string/eventLayoutPickerPrompt"
                     app:layout_constraintEnd_toEndOf="@+id/calendarPicker"
                     app:layout_constraintStart_toStartOf="@+id/calendarPicker"
-                    app:layout_constraintTop_toBottomOf="@+id/textView4" />
+                    app:layout_constraintTop_toBottomOf="@+id/textView4">
+
+                <Spinner
+                        android:id="@+id/preferedLayoutSpinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:entries="@array/eventLayouts"
+                        android:paddingBottom="4dp"
+                        android:prompt="@string/eventLayoutPickerPrompt" />
+
+            </FrameLayout>
 
             <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/daysOffswitch"
@@ -96,7 +104,7 @@
                     android:text="@string/showDaysOff"
                     app:layout_constraintEnd_toEndOf="@+id/calendarPicker"
                     app:layout_constraintStart_toStartOf="@+id/textView2"
-                    app:layout_constraintTop_toBottomOf="@+id/preferedLayoutSpinner" />
+                    app:layout_constraintTop_toBottomOf="@+id/preferedLayoutSpinnerLayout" />
 
             <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/hotelSwitch"
@@ -128,6 +136,7 @@
                     android:includeFontPadding="false"
                     android:text="@string/showCheckIn"
                     app:layout_constraintEnd_toEndOf="@+id/daysOffswitch"
+                    app:layout_constraintHorizontal_bias="0.0"
                     app:layout_constraintStart_toStartOf="@+id/textView2"
                     app:layout_constraintTop_toBottomOf="@+id/taxiSwitch" />
 

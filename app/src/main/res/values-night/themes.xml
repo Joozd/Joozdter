@@ -6,8 +6,9 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <!-- Secondary brand color. -->
+        <item name="colorBackground">@color/backgroundNight</item>
+        <item name="colorBackgroundAccent">@color/backgroundNightAccent</item>
 
         <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
     </style>
 </resources>

@@ -10,4 +10,12 @@
         <item name="android:textColor">?attr/colorPrimary</item>
         <item name="android:textAlignment">center</item>
     </style>
+
+    <style name="mainActivityStyle" parent="JoozdterTheme">
+        <item name="android:background">?attr/colorBackground</item>
+    </style>
+    <style name="accentedBackground" parent="JoozdterTheme">
+        <item name="android:background">?attr/colorBackgroundAccent</item>
+    </style>
+
 </resources>

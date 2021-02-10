@@ -4,5 +4,9 @@
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#008577</color>
     <color name="highlightPicked">#8000AA00</color>
+    <color name="backgroundDay">#BABABA</color>
+    <color name="backgroundDayAccent">#CBCBCB</color>
+    <color name="backgroundNight">#333333</color>
+    <color name="backgroundNightAccent">#222222</color>
     <color name="none">#00000000</color>
 </resources>
