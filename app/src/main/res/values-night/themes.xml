@@ -9,6 +9,6 @@
         <item name="colorBackground">@color/backgroundNight</item>
         <item name="colorBackgroundAccent">@color/backgroundNightAccent</item>
 
-        <!-- Status bar color. -->
+        <item name="colorError">@android:color/holo_red_dark</item>
     </style>
 </resources>

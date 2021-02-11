@@ -8,8 +8,8 @@ android {
         applicationId "nl.joozd.joozdter"
         minSdkVersion 17
         targetSdkVersion 30
-        versionCode 32 // 10-02-2021
-        versionName "3.1" // Night mode and UI improvement
+        versionCode 33 // 11-02-2021
+        versionName "3.1.1" // error text in red
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {

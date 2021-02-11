@@ -53,7 +53,8 @@ class PdfParserActivity : JoozdterActivity() {
 
             // Wait for calendarWorker to be ready in viewModel, then parse the file given through [intent]
             viewModel.calendarWorkerReady.observe(activity) {
-                viewModel.parseIntent(intent)
+                if(savedInstanceState?.getBoolean(RECREATING_TAG) == null)
+                    viewModel.parseIntent(intent)
             }
 
             viewModel.fileReceived.observe(activity){
@@ -72,10 +73,10 @@ class PdfParserActivity : JoozdterActivity() {
             viewModel.feedbackEvent.observe(activity){
                 when (it.getEvent()){
                     PdfParserActivityEvents.NO_VALID_CALENDAR_PICKED -> mDialogShown = showNoCalendarPickedDialog()
-                    PdfParserActivityEvents.NOT_A_KLC_ROSTER -> done("Not a valid roster")
-                    PdfParserActivityEvents.FILE_ERROR -> done ("Weird error FILE_ERROR. maybe try again?")
-                    PdfParserActivityEvents.FILE_NOT_FOUND -> done ("Weird error FILE_NOT_FOUND. maybe try again?")
-                    PdfParserActivityEvents.DONE -> done ("Done! Your roster should appear in your calendar shortly!")
+                    PdfParserActivityEvents.NOT_A_KLC_ROSTER -> done("Not a valid roster", true)
+                    PdfParserActivityEvents.FILE_ERROR -> done ("Weird error FILE_ERROR. maybe try again?", true)
+                    PdfParserActivityEvents.FILE_NOT_FOUND -> done ("Weird error FILE_NOT_FOUND. maybe try again?", true)
+                    PdfParserActivityEvents.DONE -> done ("Done! Your roster should appear in your calendar shortly!", false)
                 }
             }
             setContentView(root)
@@ -83,7 +84,11 @@ class PdfParserActivity : JoozdterActivity() {
     }
 
     private fun ActivityPdfParserBinding.updateBigNumber(number: Int){
-        countDownCounter.text = if (number == 0) getString(R.string.checkMark) else number.toString()
+        countDownCounter.text = when(number) {
+            0 -> getString(R.string.checkMark)
+            -1 -> getString(R.string.errorMark)
+            else -> number.toString()
+        }
         bigNumberAnimator = ValueAnimator.ofFloat(BIG_NUMBER_SCALE_FACTOR, 1.0f).apply {
             addUpdateListener {
                 countDownCounter.scaleX = it.animatedValue as Float
@@ -95,10 +100,11 @@ class PdfParserActivity : JoozdterActivity() {
 
     }
 
-    private fun ActivityPdfParserBinding.done(text: String){
+    private fun ActivityPdfParserBinding.done(text: String, isError: Boolean){
         progressTextView.text = text
         closePdfParserActivityButton.visibility = View.VISIBLE
         backgroundLayout.setOnClickListener { finish() }
+        if (isError) errorLayout()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
@@ -111,6 +117,17 @@ class PdfParserActivity : JoozdterActivity() {
             finish()
         }
 
+    private fun ActivityPdfParserBinding.errorLayout(){
+        updateBigNumber(-1) // -1 means ERROR
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
+            countDownCounter.setTextAppearance(activity, R.style.bigNumberErrorStyle) // deprecated in API M
+            progressTextView.setTextAppearance(activity, R.style.statusErrorStyle) // deprecated in API M
+        } else {
+            countDownCounter.setTextAppearance(R.style.bigNumberErrorStyle)  // Needs API M or higher
+            progressTextView.setTextAppearance(R.style.statusErrorStyle)   // Needs API M or higher
+        }
+    }
+
     override fun onStop() {
         mDialogShown?.dismiss()
         super.onStop()
@@ -118,6 +135,7 @@ class PdfParserActivity : JoozdterActivity() {
 
     companion object{
         private const val BIG_NUMBER_SCALE_FACTOR = 2.0f
+        private const val RECREATING_TAG = "RECREATING_TAG"
     }
 }
 
