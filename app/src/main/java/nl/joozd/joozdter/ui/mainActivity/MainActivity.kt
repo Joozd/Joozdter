@@ -65,17 +65,6 @@ class MainActivity : JoozdterActivity() {
                 .commit()
         }
 
-        // show splash screen on first run
-        if (JoozdterPrefs.firstTime) {
-            supportFragmentManager.commit{
-                add(R.id.mainActivityLayout, newUserFragment)
-                addToBackStack(null)
-            }
-            JoozdterPrefs.firstTime = false
-        } else {
-            alert(R.string.youCanClose)
-        }
-
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR)
             != PackageManager.PERMISSION_GRANTED
         ) {
@@ -103,7 +92,7 @@ class MainActivity : JoozdterActivity() {
                 }
 
                 viewModel.pickedCalendar.observe(activity){
-                    pickedCalendarText.text = it.displayName
+                    it?.let { pickedCalendarText.text = it.displayName }
                 }
 
                 //toggle switches:
@@ -191,6 +180,17 @@ class MainActivity : JoozdterActivity() {
                 preferedLayoutSpinner.setSelection(JoozdterPrefs.preferedLayout - 1)
 
                 setContentView(root)
+
+                // show splash screen on first run
+                if (JoozdterPrefs.firstTime) {
+                    supportFragmentManager.commit{
+                        add(R.id.mainActivityLayout, newUserFragment)
+                        addToBackStack(null)
+                    }
+                    JoozdterPrefs.firstTime = false
+                } else {
+                    alert(R.string.youCanClose)
+                }
             }
         }
     }
