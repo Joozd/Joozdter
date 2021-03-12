@@ -424,7 +424,7 @@ class KlcRosterParser(inputStream: InputStream) {
         private const val actualSimString = "([A-Z]{2}\\d)_([A-Z]\\d)"
 
         private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD|LVE|WTV|IFLC|SLGC|LCV|IGC"
-        private const val standbyString = "RES[A-Z]"
+        private const val standbyString = "RES[A-Z0-9]"
         private const val extraString = "TCRM|TCRMI|TCUG"
         private const val otherDutyString = "MMCS|TCBT|TGC|TFIE|TBEXI|OE"
         private const val singleLineActivityString = "$standbyString|Pick"
