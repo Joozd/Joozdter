@@ -8,7 +8,7 @@ android {
         applicationId "nl.joozd.joozdter"
         minSdkVersion 17
         targetSdkVersion 30
-        versionCode 36 // 15-2-2021
+        versionCode 36 // 04-07-2021
         versionName "3.1.4" // Support RES?
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
