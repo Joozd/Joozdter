@@ -197,7 +197,7 @@ class KlcRosterParser(inputStream: InputStream) {
                             yesterday = workingList.firstOrNull { it.date == yesterday?.date?.minusDays(1) }
                             if (yesterday == null) break@innerWhile
                         }
-                        yesterday?.let {
+                        yesterday.let {
                             val yesterdaysUpdatedEvents = it.events.map {
                                 if (it.type == Activities.HOTEL) it.copy(end = startTime)
                                 else it.copy()
@@ -260,7 +260,7 @@ class KlcRosterParser(inputStream: InputStream) {
                         val numbers = checkOutRegex.find(line)!!.value.filter{it in "0123456789 "}.trim().replace("\\s+".toRegex(), " ").split(" ")
                         val time = numbers[0].toInt()
                         val endTime = LocalDateTime.of(activeDate, LocalTime.of(time/100, time%100)).atZone(ZoneOffset.UTC).toInstant()
-                        val startTime = todaysEvents.maxBy { it.end }?.end ?: endTime.minusSeconds(defaultCheckoutTimeInSeconds)
+                        val startTime = todaysEvents.maxByOrNull { it.end }?.end ?: endTime.minusSeconds(defaultCheckoutTimeInSeconds)
                         val extraMessage = line.slice(line.indexOf("[")..line.indexOf("]"))
 
                         todaysEvents.add(KlcRosterEvent(Activities.CHECKOUT, startTime, endTime, line, extraMessage))
