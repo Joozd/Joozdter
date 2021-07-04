@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 import nl.joozd.joozdter.model.Event
 import nl.joozd.joozdter.data.JoozdterPrefs
+import nl.joozd.joozdter.utils.InstantRange
 import nl.joozd.klcrosterparser.Activities
 import java.time.*
 import java.time.temporal.ChronoUnit
@@ -133,6 +134,52 @@ class CalendarHandler(private val context: Context) {
         return foundEvents
     }
     */
+
+    /**
+     * Will return a list of all [Event]s starting in [range]
+     * @param range The range in which events should start to be returned by this function
+     * Returns null if no permission to read calendar
+     */
+    fun getEventsStartingInRange(range: InstantRange): List<Event>?{
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
+            != PackageManager.PERMISSION_GRANTED) return null
+        val foundEvents: MutableList<Event> = mutableListOf()
+
+        activeCalendar?.let {
+            val uri: Uri = CalendarContract.Events.CONTENT_URI
+            val selection: String = "((${CalendarContract.Events.CALENDAR_ID} = ?) AND (" +
+                    "${CalendarContract.Events.DTSTART} >= ?) AND (" +
+                    "${CalendarContract.Events.DTSTART} < ?))"
+            val selectionArgs: Array<String> = arrayOf(
+                activeCalendar!!.calID.toString(),
+                range.start.toEpochMilli().toString(),
+                range.endInclusive.toEpochMilli().toString()
+            )
+            context.contentResolver.query(
+                uri,
+                EVENT_PROJECTION,
+                selection,
+                selectionArgs,
+                null
+            )?.use { cur ->
+                while (cur.moveToNext()) {
+                    if (cur.getLong(EVENT_CALENDAR_ID_INDEX) == it.calID
+                    && IDENTIFIER in cur.getString(EVENT_DESCRIPTION_INDEX)
+                    && cur.getInt(EVENT_DELETED_INDEX) == 0)
+                    {
+                        foundEvents.add(Event(cur.getString(EVENT_TITLE_INDEX),
+                            cur.getString(EVENT_TITLE_INDEX),
+                            Instant.ofEpochMilli(cur.getLong(EVENT_DTSTART_INDEX)),
+                            Instant.ofEpochMilli(cur.getLong(EVENT_DTEND_INDEX)),
+                            cur.getString(EVENT_EVENT_LOCATION_INDEX),
+                            "",
+                            cur.getLong(EVENT_ID_INDEX)))
+                    }
+                }
+            }
+        }
+        return foundEvents
+    }
 
 
     fun getEventsStartingOn(dateInstant: Instant): List<Event> {

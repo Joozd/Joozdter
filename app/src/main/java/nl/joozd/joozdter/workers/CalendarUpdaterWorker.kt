@@ -78,10 +78,16 @@ class CalendarUpdaterWorker(appContext: Context, workerParams: WorkerParameters)
          * uses custom InstantRange
          * @see InstantRange if you want to know how that works
          */
+        calendarHandler.getEventsStartingInRange(start..end)?.let {
+            calendarHandler.deleteEvents(it)
+        } ?: return@withContext Result.failure() // if null, no permission and this will never work.
+
+        /*
         (start..end).datesAsInstants.forEach { i ->
             val todaysEvents = calendarHandler.getEventsStartingOn(i)
             calendarHandler.deleteEvents(todaysEvents)
         }
+        */
 
         /**
          * Insert (processed and filtered) events into device calendar
