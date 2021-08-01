@@ -193,14 +193,13 @@ class KlcRosterParser(inputStream: InputStream) {
 
                         //keep going back untill a date with a hotel in it is found
                         var yesterday: RosterDay? = RosterDay(activeDate, emptyList(), "")
-                        innerWhile@while (yesterday!!.events.none { it.type == Activities.HOTEL }) {
+                        innerWhile@while (yesterday?.events?.none { it.type == Activities.HOTEL } == true) {
                             yesterday = workingList.firstOrNull { it.date == yesterday?.date?.minusDays(1) }
-                            if (yesterday == null) break@innerWhile
                         }
-                        yesterday.let {
-                            val yesterdaysUpdatedEvents = it.events.map {
-                                if (it.type == Activities.HOTEL) it.copy(end = startTime)
-                                else it.copy()
+                        yesterday?.let {
+                            val yesterdaysUpdatedEvents = it.events.map { e ->
+                                if (e.type == Activities.HOTEL) e.copy(end = startTime)
+                                else e.copy()
                             }
                             workingList.remove(yesterday)
                             workingList.add(
@@ -286,7 +285,6 @@ class KlcRosterParser(inputStream: InputStream) {
                                         )
                                     }
                                     words[0] == CLICK -> {
-                                        @Suppress("NAME_SHADOWING") val words = line.split(" ")
                                         @Suppress("NAME_SHADOWING") val numbers =
                                             line.filter { it in "0123456789 " }.trim()
                                                 .replace("\\s+".toRegex(), " ").split(" ")
