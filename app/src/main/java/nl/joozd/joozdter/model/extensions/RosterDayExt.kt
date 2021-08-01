@@ -1,7 +1,5 @@
 package nl.joozd.joozdter.model.extensions
 
-import nl.joozd.joozdter.utils.fdpChecker
-import nl.joozd.klcrosterparser.Activities
 import nl.joozd.klcrosterparser.RosterDay
 
 fun RosterDay.addNotesToCorrectEvent(): RosterDay {
