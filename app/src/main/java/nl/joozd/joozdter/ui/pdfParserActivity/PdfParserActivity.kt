@@ -10,6 +10,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.widget.TextViewCompat
 import nl.joozd.joozdter.R
 import nl.joozd.joozdter.databinding.ActivityPdfParserBinding
 import nl.joozd.joozdter.ui.mainActivity.MainActivity
@@ -108,6 +109,7 @@ class PdfParserActivity : JoozdterActivity() {
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         recreate()
     }
 
@@ -119,13 +121,8 @@ class PdfParserActivity : JoozdterActivity() {
 
     private fun ActivityPdfParserBinding.errorLayout(){
         updateBigNumber(-1) // -1 means ERROR
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
-            countDownCounter.setTextAppearance(activity, R.style.bigNumberErrorStyle) // deprecated in API M
-            progressTextView.setTextAppearance(activity, R.style.statusErrorStyle) // deprecated in API M
-        } else {
-            countDownCounter.setTextAppearance(R.style.bigNumberErrorStyle)  // Needs API M or higher
-            progressTextView.setTextAppearance(R.style.statusErrorStyle)   // Needs API M or higher
-        }
+        TextViewCompat.setTextAppearance(countDownCounter, R.style.bigNumberErrorStyle)
+        TextViewCompat.setTextAppearance(progressTextView, R.style.statusErrorStyle)
     }
 
     override fun onStop() {
