@@ -19,6 +19,8 @@ class KlcRosterParser(inputStream: InputStream) {
     private val legend = mutableMapOf<String, String>()
     private val hotels = mutableMapOf<String, String>()
 
+    private val periodRegex = """Period: (\d\d$month\d\d) - (\d\d$month\d\d)""".toRegex()
+
     private val dayRegEx = "($weekDay)\\d\\d".toRegex()
     // eg. Wed04
 
@@ -53,9 +55,12 @@ class KlcRosterParser(inputStream: InputStream) {
     init{
         val firstPage = PdfTextExtractor.getTextFromPage(reader, 1, SimpleTextExtractionStrategy())
         header =
-            if (endOfHeaderMarker in firstPage && dateRangeStartMarker in firstPage && dateRangeEndMarker in firstPage)
+            if (endOfHeaderMarker in firstPage && dateRangeStartMarker in firstPage && periodRegex in firstPage)
                 firstPage.slice(0 until firstPage.indexOf(endOfHeaderMarker))
-            else ""
+            else "".also{
+                println(periodRegex in firstPage)
+                println(firstPage)
+            }
     }
 
     @Suppress("MemberVisibilityCanBePrivate")
@@ -99,10 +104,20 @@ class KlcRosterParser(inputStream: InputStream) {
             startOfRoster = null
             endOfRoster = null
         } else {
-            val dateRangeString = header.slice(header.indexOf(dateRangeStartMarker)+ dateRangeStartMarker.length until header.indexOf(dateRangeEndMarker))
-            val startEnd = dateRangeString.split(" - ")
-            startOfRoster = LocalDateTime.of (LocalDate.parse(startEnd[0], DateTimeFormatter.ofPattern("ddMMMyy", Locale.US)), LocalTime.MIDNIGHT).atZone(ZoneOffset.UTC).toInstant()
-            endOfRoster = LocalDateTime.of (LocalDate.parse(startEnd[1], DateTimeFormatter.ofPattern("ddMMMyy", Locale.US)), LocalTime.MIDNIGHT).atZone(ZoneOffset.UTC).plusDays(1).toInstant()
+            periodRegex.find(header)!!.let { // we checked periodRegEx had a match in header when creating it
+                startOfRoster = LocalDateTime.of(
+                    LocalDate.parse(
+                        it.groupValues[1],
+                        DateTimeFormatter.ofPattern("ddMMMyy", Locale.US)
+                    ), LocalTime.MIDNIGHT
+                ).atZone(ZoneOffset.UTC).toInstant()
+                endOfRoster = LocalDateTime.of(
+                    LocalDate.parse(
+                        it.groupValues[2],
+                        DateTimeFormatter.ofPattern("ddMMMyy", Locale.US)
+                    ), LocalTime.MIDNIGHT
+                ).atZone(ZoneOffset.UTC).plusDays(1).toInstant()
+            }
         }
     }
 
@@ -408,14 +423,15 @@ class KlcRosterParser(inputStream: InputStream) {
 
         private const val endOfHeaderMarker = "date H duty R dep arr AC info date H duty R dep arr AC info date H duty R dep arr AC info"
         private const val dateRangeStartMarker = "Period: "
-        private const val dateRangeEndMarker = " contract:"
+        //private const val dateRangeEndMarker = " contract:"
         private const val endOfRosterMarker = "Flight time"
         private const val legendMarker = "Absence/Ground Activity Legend"
         private const val hotelsMarker = "Hotels"
         private const val hotelsEndMarker = "Recurrent Training / Checks"
 
         private const val CLICK = "CLICK"
-        private const val weekDay = "Mon|Tue|Wed|Thu|Fri|Sat|Sun"
+        private const val weekDay = "(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)"
+        private const val month = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)"
         private const val carrier = "DH/[A-Z]{2}|WA|KL"
         private const val trainingString = "T[A-Z]{2,4}[0-9]?H?"
         //private const val simString = "TSTR1|TSTR1H|TSTR2|TSTR2H|TSFCL|TSLOE|TSLOEH|TSOD|TSODH|TSACTI|TSACT|TLCY"
