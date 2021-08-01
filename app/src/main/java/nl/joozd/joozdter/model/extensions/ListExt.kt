@@ -26,7 +26,7 @@ fun List<Event>.addMaxFDP(): List<Event>{
             Log.e("addMaxFDP", "No check-out found after check-in $ci")
         }
         val stretches = filter{it.eventType == Activities.FLIGHT && it.startInstant in (ci.startInstant..co.startInstant)}.size
-        val maxFDP = fdpChecker(ci.startTime, co.startTime, stretches, ZoneId.of("Europe/Amsterdam")) // Only works for Amsterdam as that is always homebase for KLC
+        val maxFDP = fdpChecker(ci.startTime, stretches, ZoneId.of("Europe/Amsterdam")) // Only works for Amsterdam as that is always homebase for KLC
         val actualFdp = co.startTime - ci.startTime
         val marginMinutes = (maxFDP - actualFdp).toMinutes()
         val marginString = if (marginMinutes > 0) "FDP Margin: ${marginMinutes.minutesToString()} "

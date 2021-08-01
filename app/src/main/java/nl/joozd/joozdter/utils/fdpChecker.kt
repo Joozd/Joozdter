@@ -3,14 +3,13 @@ package nl.joozd.joozdter.utils
 import java.time.*
 
 /**
- * fdpChecker will check FDP margin for two times.
+ * fdpChecker will give max FDP for start time + zone and number of sectors.
  * @param start: check-in time
- * @param end: check-out time
  * @param sectors: Amount of sectors on this duty
  * @param zoneId: timezone for local time
  */
 
-fun fdpChecker(start: Instant, end: Instant, sectors: Int, timeZone: ZoneId ): Duration{
+fun fdpChecker(start: Instant, sectors: Int, timeZone: ZoneId ): Duration{
     val startTime = start.atZone(timeZone).toLocalDateTime()
     val uncorrectedMax: Duration = when(startTime.toLocalTime()){
         in (LocalTime.of(6,0)..LocalTime.of(13,29)) ->      Duration.ofHours(13)
