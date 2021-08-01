@@ -7,26 +7,19 @@ import android.view.ViewGroup
 import android.widget.Button
 import androidx.fragment.app.Fragment
 import nl.joozd.joozdter.R
-
-
+import nl.joozd.joozdter.databinding.NewUserFragmentBinding
 
 
 class NewUserFragment : Fragment() {
-    private lateinit var thisView: View
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        thisView = inflater.inflate(R.layout.new_user_fragment, container, false)
+    ): View = NewUserFragmentBinding.bind(inflater.inflate(R.layout.new_user_fragment, container, false)).apply{
 
-        val closeButton: Button = thisView.findViewById(R.id.closePdfParserActivityButton)
-
-        closeButton.setOnClickListener {
-            fragmentManager?.popBackStack()
+        closePdfParserActivityButton.setOnClickListener {
+            parentFragmentManager.popBackStack()
         }
 
-        return thisView
-    }
+    }.root
 }
