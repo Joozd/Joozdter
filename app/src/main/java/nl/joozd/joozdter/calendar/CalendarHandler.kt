@@ -278,7 +278,7 @@ class CalendarHandler(private val context: Context) {
                 val eventID: Long = it._id
                 val deleteUri: Uri =
                     ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventID)
-                val rows: Int = context.contentResolver.delete(deleteUri, null, null)
+                context.contentResolver.delete(deleteUri, null, null)
             }
         }
     }
