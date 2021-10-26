@@ -15,7 +15,7 @@ object JoozdterPrefs {
     const val PICKED_CALENDAR = "pickedCalendar"
 
 
-    private val context: Context = App.instance
+    private val context: Context get () = App.instance
 
     val sharedPrefs: SharedPreferences = context.getSharedPreferences(
         context.getString(R.string.preference_file_key), Context.MODE_PRIVATE)
