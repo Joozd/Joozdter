@@ -3,11 +3,12 @@ package nl.joozd.joozdter.utils
 import java.time.*
 
 class InstantRange(override val start: Instant, override val endInclusive: Instant): ClosedRange<Instant> {
+    constructor(range: ClosedRange<Instant>): this(range.start, range.endInclusive)
     val startDate: LocalDate = LocalDateTime.ofInstant(start, ZoneOffset.UTC).toLocalDate()
     val endDate: LocalDate = LocalDateTime.ofInstant(endInclusive, ZoneOffset.UTC).toLocalDate()
 
-    val dates: List<LocalDate>
-        get() = DateProgression(startDate, endDate).toList()
+    val dates: Iterable<LocalDate>
+        get() = DateProgression(startDate, endDate)
 
     val datesAsInstants: List<Instant>
         get() = dates.map{it.atStartOfDay().toInstant(ZoneOffset.UTC)}
@@ -40,3 +41,5 @@ class InstantRange(override val start: Instant, override val endInclusive: Insta
 
     }
 }
+
+

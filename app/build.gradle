@@ -51,6 +51,10 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(":klcrosterparser")
 
+    //room
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+
 
     //kotlin Coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2"

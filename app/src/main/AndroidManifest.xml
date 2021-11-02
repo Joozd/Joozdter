@@ -16,7 +16,8 @@
             android:supportsRtl="true"
             android:theme="@style/JoozdterTheme"
             tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".ui.pdfParserActivity.PdfParserActivity" android:excludeFromRecents="true">
+        <activity android:name=".ui.pdfParserActivity.PdfParserActivity" android:excludeFromRecents="true"
+                android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -25,7 +26,8 @@
         </activity>
         <activity
                 android:name=".ui.mainActivity.MainActivity"
-                android:launchMode="singleTask">
+                android:launchMode="singleTask"
+                android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
