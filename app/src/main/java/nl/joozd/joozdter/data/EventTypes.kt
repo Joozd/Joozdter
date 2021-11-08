@@ -15,7 +15,9 @@ enum class EventTypes(val value: Int) {
     HOTEL(30),          // may not have an end time. In this case, look it up in next day. (or the day after, etc).
     STANDBY(40),
     LEAVE(100),
-    ROUTE_DAY(101);     // "dag over"
+    CLICK(101),
+    ROUTE_DAY(200),     // "dag over"
+    UNKNOWN_EVENT(-1);
                               // Hotel ends with [PICK_UP]
     //TODO add all other possible events
 
@@ -23,7 +25,7 @@ enum class EventTypes(val value: Int) {
         /**
          * Get the event type from an integer (eg. when it was stored in a DB)
          */
-        fun of(v: Int): EventTypes? = values().firstOrNull { it.value == v }
+        fun of(v: Int): EventTypes = values().firstOrNull { it.value == v } ?: UNKNOWN_EVENT
     }
 
 }

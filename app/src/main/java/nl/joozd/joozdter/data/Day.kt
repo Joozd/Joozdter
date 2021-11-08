@@ -1,8 +1,9 @@
 package nl.joozd.joozdter.data
 
-import nl.joozd.joozdter.data.extensions.words
 import nl.joozd.joozdter.utils.InstantRange
 import nl.joozd.joozdter.utils.extensions.atEndOfDay
+import nl.joozd.joozdter.data.EventTypes.*
+import nl.joozd.joozdter.utils.extensions.replaceValue
 import java.time.*
 import java.time.format.DateTimeFormatter
 
@@ -13,8 +14,62 @@ import java.time.format.DateTimeFormatter
  * @param events: All events of this day
  * @param legend: Legend for the used abbreviations in this day (not all have to be used, its the legend for the entire roster)
  */
-class Day(val date: LocalDate, val events: List<Event>, val legend: Map<String, String>?, val fdp: Duration? = null){
+class Day(val date: LocalDate, val events: List<Event>){
+    /**
+     * Completes times for this day.
+     * @return a [Day] where all [events] have their times completed
+     * Events that need completing:
+     * [HOTEL], [PICK_UP], [CHECK_IN], [CHECK_OUT]
+     */
+    fun completeTimes(allDays: Collection<Day>): Day{
+        val nextDay = getNextWorkingDay(allDays)
+        val currentEvents = events.toMutableList()
+        currentEvents.firstOrNull{it.type == HOTEL}?.let{ hotelEvent ->
+            val startTime: Instant = currentEvents.firstOrNull { it.type in listOf(DUTY, CHECK_OUT) }?.endTime ?: date.atStartOfDay(ZoneOffset.UTC).toInstant()
+            val endTime = nextDay?.startOfDay ?: date.atEndOfDay(ZoneOffset.UTC).toInstant()
+            currentEvents.replaceValue(hotelEvent, hotelEvent.copy(startTime = startTime, endTime = endTime))
+        }
+
+        currentEvents.firstOrNull{it.type == PICK_UP}?.let{ pickupEvent ->
+            val endTime: Instant? = currentEvents.firstOrNull { it.type in listOf(DUTY, CHECK_IN) }?.startTime ?: pickupEvent.startTime!!.plusSeconds(60*30L)
+            //if no endTime for pickup found it will be half an hour
+            currentEvents.replaceValue(pickupEvent, pickupEvent.copy(endTime = endTime))
+        }
+
+        //checkin ends at first event after checkin
+        currentEvents.firstOrNull{it.type == CHECK_IN}?.let{ checkInEvent ->
+            val endTime: Instant? = currentEvents.filter{it.startTime ?: Instant.MIN > checkInEvent.startTime!!}.minByOrNull { it.startTime!! }?.startTime ?: checkInEvent.startTime!!.plusSeconds(60*60L)
+            //if no endTime for checkin found it will be one hour
+            currentEvents.replaceValue(checkInEvent, checkInEvent.copy(endTime = endTime))
+        }
+
+        //checkout starts after last event before checkout
+        currentEvents.firstOrNull{it.type == CHECK_OUT}?.let{ checkOutEvent ->
+            val startTime: Instant? = currentEvents.filter{it.endTime ?: Instant.MAX < checkOutEvent.endTime!!}.maxByOrNull { it.endTime!! }?.endTime ?: checkOutEvent.endTime!!.minusSeconds(30*60L)
+            //if no startTime for checkout found it will be 30 minutes
+            currentEvents.replaceValue(checkOutEvent, checkOutEvent.copy(startTime = startTime))
+        }
+
+        return Day(date, currentEvents)
+    }
+    val startOfDay: Instant get() = events.minByOrNull { it.startTime ?: Instant.MAX }?.startTime ?: standardStartTime()
+
     override fun toString(): String = "Day: $date\nEvents:\n${events.joinToString("\n")}"
+
+
+    private fun standardStartTime(): Instant = ZonedDateTime.of(date, LocalTime.of(5,30), ZoneId.of("Europe/Amsterdam")).toInstant()
+
+    /**
+     * Get the next working day, or null if none found
+     * (when it ends with a route day it will also return null)
+     */
+    private fun getNextWorkingDay(days: Collection<Day>): Day?{
+        var nextDay = days.firstOrNull { it.date == date.plusDays(1) } ?: return null
+        while (nextDay.events.any {it.type == ROUTE_DAY}) nextDay = days.firstOrNull { it.date == nextDay.date.plusDays(1) } ?: return null
+        return nextDay
+    }
+
+
     companion object{
         /**
          * Parse a Day from a string.
@@ -37,8 +92,8 @@ class Day(val date: LocalDate, val events: List<Event>, val legend: Map<String, 
                 1 -> return null // this is a date without any roster info (can happen at start of employment)
                 2 -> { /*this is a route day, will lead to a day with only a "day over" event*/
                     val date = getDate(dayLines.first(), period) ?: return null
-                    val event = Event(dayLines[1], EventTypes.ROUTE_DAY, date.atStartOfDay(ZoneOffset.UTC).toInstant(), date.atEndOfDay(ZoneOffset.UTC).toInstant())
-                    return Day(date, emptyList(), emptyMap())
+                    val event = Event(dayLines[1], ROUTE_DAY, date.atTime(12,0).toInstant(ZoneOffset.UTC), null)
+                    return Day(date,listOf(event))
                 }
                 4 -> { /*this is a normal day*/ }
                 else -> error ("Day.of(): Malformed [dayLines] does not have 1, 2 or 4 lines: $dayLines")
@@ -61,6 +116,7 @@ class Day(val date: LocalDate, val events: List<Event>, val legend: Map<String, 
             val dayStart = LocalTime.parse(dayLines[2], timeFormatter).atDate(date).toInstant(ZoneOffset.UTC)
             val dayEnd = LocalTime.parse(dayLines[3], timeFormatter).atDate(date).toInstant(ZoneOffset.UTC)
 
+            /*
             //pop mainEventLine out of [lines], parse it and add it to [foundEvents]
             lines.firstOrNull{ it matches mainEventRegex}?.also{
                 lines = lines.filter { l -> l != it }
@@ -69,17 +125,18 @@ class Day(val date: LocalDate, val events: List<Event>, val legend: Map<String, 
                     it.copy(startTime = it.startTime ?: dayStart, endTime = it.endTime ?: dayEnd, info = extraMessage ?: "")?.let { e -> foundEvents.add(e) }
                 }
             }
+            */
             //println(lines.joinToString("\n", postfix = "\n***") { ".$it"})
 
-            foundEvents.addAll(lines.mapNotNull { Event.parse(it, date) })
+            foundEvents.addAll(lines.mapNotNull { Event.parse(it, date, legend ?: emptyMap()) })
 
-            // Add texts like TLC or TSOD to the next event if it is not the main activity (these have null times)
-            foundEvents.filter { it.startTime == null && it.endTime == null}.forEach{
+            // Add texts like TLC or TSOD to the next event if it is not the main activity (these have null times and are not HOTEL)
+            foundEvents.filter { it.startTime == null && it.endTime == null && it.type !in listOf(HOTEL, ROUTE_DAY)}.forEach{
                 eventThatIsANote ->
                 val index = foundEvents.indexOf(eventThatIsANote)
                 foundEvents.remove(eventThatIsANote)
                 foundEvents.getOrNull(index)?.let{ e ->
-                    foundEvents[index] = e.copy(name = eventThatIsANote.name + " " + e.name)
+                    foundEvents[index] = e.copy(name = e.name + " * " + eventThatIsANote.name)
                 }
             }
 
@@ -96,13 +153,37 @@ class Day(val date: LocalDate, val events: List<Event>, val legend: Map<String, 
                 Duration.ofMinutes(r[1].toLong() * 60 + r[2].toLong())
             }
 
+            /**
+             * Add extraMessage to relevant events:
+             */
+            if (extraMessage != null) {
+                getMainEvents(foundEvents).forEach {
+                    foundEvents.replaceValue(it, it.copy(info = extraMessage))
+                }
+            }
 
-            return Day(date, foundEvents, legend, fdp) // TODO should not be emptylist obviously
+            /**
+             * At this point, we have all the events in the roster,
+             * but not all have start and/or end times.
+             * These have to be added and/or calculated.
+             * Since that needs info from the next day as well (for HOTEL end times) this is not done here.
+             * When all days have been created, map the list with all days to it.completeTimes(allDays)
+             */
+
+
+            return Day(date, foundEvents) // TODO should not be emptylist obviously
         }
 
         private fun getDate(dayString: String, period: InstantRange): LocalDate?{
             val dayOfMonth = dayString.filter { it.isDigit() }.toInt()
             return period.dates.firstOrNull{ it.dayOfMonth == dayOfMonth}
+        }
+
+        /**
+         * Return all [DUTY], [CHECK_IN], [TRAINING], [STANDBY] and [LEAVE] events
+         */
+        private fun getMainEvents(events: List<Event>): List<Event>{
+            return events.filter {it.type in listOf(DUTY, CHECK_IN, TRAINING, STANDBY)}
         }
 
         private val timeFormatter = DateTimeFormatter.ofPattern("HHmm")

@@ -5,6 +5,7 @@ import android.net.Uri
 import nl.joozd.joozdter.data.Day
 import nl.joozd.joozdter.data.extensions.replaceWithValue
 import nl.joozd.joozdter.data.extensions.splitByRegex
+import nl.joozd.joozdter.data.extensions.words
 import nl.joozd.joozdter.utils.InstantRange
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -58,7 +59,7 @@ class RosterParser(private val parsedPdf: List<String>) {
          * If a legend is found, this will be it's map.
          * A line "RES2 Reserve at Home E2" will become "RES2" to "Reserve at Home E2"
          */
-        val legend = legendString
+        val legend = (legendString
             ?.lines()
             ?.filter{ it.isNotBlank() }
             ?.map { line ->
@@ -66,9 +67,10 @@ class RosterParser(private val parsedPdf: List<String>) {
                     .let {
                         it.first() to it.drop(1).joinToString(" ")
                     }}
-            ?.toMap() ?: emptyMap<String, String>() + (buildHotelsLegend(hotelsString))
+            ?.toMap() ?: emptyMap<String, String>()) + (buildHotelsLegend(hotelsString))
+        //println("built legend: $legend")
+        //println("hotelLegend is ${buildHotelsLegend(hotelsString)}")
 
-        println("Found Hotels string:\n$hotelsString\n*****")
 
         // If no roster text found, no roster will be parsed
         //there is a chance a roster is longer than one page. In this case rosterTextRegex will only return the last page
@@ -82,11 +84,12 @@ class RosterParser(private val parsedPdf: List<String>) {
             dayStringsRegex.find(page)!!.groupValues[1]
         }.splitByRegex(dayRegEx, true).filter{ it.isNotBlank() }.map {it.trim()}
 
-        // println(dayStrings.joinToString("\n.....\n"))
-        // println(dayContentStrings.joinToString("\n.....\n"))
+        //println(dayStrings.joinToString("\n.....\n"))
+        //println(dayContentStrings.joinToString("\n.....\n"))
 
 
         return dayContentStrings.mapNotNull {
+            println("parsing $it\n.....\n")
             dayStrings.firstOrNull { ds -> it.startsWith(ds.lines().first()) }
                 ?.let { ds -> Day.of(ds, it, legend, rosterPeriod) }
         }
@@ -112,25 +115,29 @@ class RosterParser(private val parsedPdf: List<String>) {
             ?.replaceWithValue("""(${weekDay}\d\d) """.toRegex()){ "$it\n"} // place day markers on their own line
     }
 
+    /**
+     * Build hotels legend (eg. H1=AC Hotel Valencia by Marriott, Valencia +34963317000, H2=NH Firenze, Florence 0039 055 2770)
+     */
     private fun buildHotelsLegend(hotelsString: String?): Map<String, String>{
-        val hotelRegex = """(H\d+ .*?)H\d""".toRegex() // will get all hotels but the last one
+        hotelsString?.takeIf { it.isNotEmpty() } ?: return emptyMap() // return empty map on empty or null string
+        val hotelRegex = """H\d+\s.*""".toRegex()
+        var lines = LinkedList(hotelsString.lines())
+        var currentLine = lines.pop()
+        val hotelLines = ArrayList<String>()
 
-        return hotelRegex.findAll(hotelsString ?: return emptyMap()).map{
-            it.groupValues[1]
-        }.let{ hss ->
-            var workingString: String = hotelsString
-            //remove all found hotel strings, what remains is the last one
-            hss.forEach{
-                workingString = workingString.replace(it, "")
+        while (lines.isNotEmpty()){
+            val l = lines.pop()
+            if (l matches hotelRegex){
+                hotelLines.add(currentLine)
+                currentLine = l
             }
-            hss + workingString
-        }.map{ it.replace (NEWLINE, " ")
-                // part below generates "H1" to "Hotel No-Tell +001 555 23566" from "H1 Hotel No-Tell +001 555 23566"
-            .split(" ")
-            .let { words ->
-                words.first() to words.drop(1).joinToString(" ")
-            }
-        }.toMap()
+            else currentLine += " $l"
+        }
+        hotelLines.add(currentLine)
+
+        return hotelLines.map { it.words().let{
+            it.first() to it.drop(1).joinToString(" ")
+        }}.toMap()
 
 
 

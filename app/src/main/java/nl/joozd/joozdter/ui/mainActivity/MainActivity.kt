@@ -31,7 +31,6 @@ class MainActivity : JoozdterActivity() {
             f()
         }
     }
-    private lateinit var calendarHandler: CalendarHandler
     private var showHalpListener: ShowMenuListener? = null
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -50,6 +49,7 @@ class MainActivity : JoozdterActivity() {
     override fun onRequestPermissionsResult(requestCode : Int ,
                                             permissions: Array<String>,
                                             grantResults: IntArray){
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         recreate()
     }
 
