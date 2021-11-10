@@ -5,11 +5,14 @@ import nl.joozd.joozdter.data.EventTypes
 import java.time.Instant
 
 class PickupEvent(name: String,
-                  startTime: Instant?,
+                  startTime: Instant,
                   endTime: Instant?,
                   info: String = "",
                   notes: String = ""
 ): CompleteableEvent(name, EventTypes.PICK_UP, startTime, endTime, info, notes){
+    internal constructor(d: EventConstructorData) :
+            this(d.name(), d.pickupTimeStart(), null)
+
     override fun completeTimes(today: Day, nextDay: Day?): Event {
         val endTime: Instant = today.getFirstTypedEvent(eventsAfterPickup)?.startTime
             ?: this.startTime!!.plusSeconds(STANDARD_DURATION)

@@ -12,13 +12,16 @@ import java.time.Instant
 @Entity
 data class RoomEvent(
     @PrimaryKey val id: Long,
-    val name: String,
-    val type: Int,       // EventType.value
-    val startTime: Long?, // Instant.epochSecond; no Events without times in DB
-    val endTime: Long?,   // Instant.epochSecond; no Events without times in DB
-    val info: String,
-    val notes: String
-    ){
+                val name: String,
+                val type: Int,       // EventType.value
+                val startTime: Long?, // Instant.epochSecond; no Events without times in DB
+                val endTime: Long?,   // Instant.epochSecond; no Events without times in DB
+                val info: String,
+                val notes: String)
+{
+    /**
+     * convert this RoomEvent to a (subclass of) Event
+     */
     fun toEvent(): Event = Event(
         name,
         EventTypes.of(type),
@@ -26,5 +29,5 @@ data class RoomEvent(
         endTime?.let { Instant.ofEpochSecond(it)},
         info,
         notes
-    )
+    ).withTypeInstance()
 }

@@ -1,16 +1,14 @@
 package nl.joozd.joozdter.data.events
 
-import nl.joozd.joozdter.data.Day
 import nl.joozd.joozdter.data.EventTypes
 import nl.joozd.joozdter.data.extensions.words
 import nl.joozd.joozdter.data.room.RoomEvent
-import nl.joozd.joozdter.utils.extensions.atEndOfDay
+import nl.joozd.joozdter.utils.extensions.endInstant
+import nl.joozd.joozdter.utils.extensions.startInstant
 import nl.joozd.joozdter.utils.extensions.toLocalDate
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 
 /**
  * An event is one thing that happens, eg. pickup, 1 flight, a hotel stay or a checkin.
@@ -22,7 +20,7 @@ import java.time.format.DateTimeFormatter
  * @param notes: Notes, such as crew names, FDP info, etc.
  */
 open class Event(val name: String, val type: EventTypes, val startTime: Instant?, val endTime: Instant?, val info: String = "", val notes: String = "") {
-    override fun toString(): String = "name: $name\ntype: $type\nstart: $startTime\nend: $endTime\ninfo: $info\nnotes:$notes"
+    override fun toString(): String = "name: $name\ntype: $type\nstart: $startTime\nend: $endTime\ninfo: $info\nnotes:$notes\n"
 
     /**
      * Works like copy in a data class
@@ -50,6 +48,20 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
             info,
             notes
         )
+    }
+
+    /**
+     * Sets the correct instance of this event
+     * TODO make this for all types
+     */
+    fun withTypeInstance(): Event{
+        return when(type){
+            EventTypes.HOTEL -> HotelEvent(name, startTime, endTime, info, notes)
+            EventTypes.CHECK_OUT -> CheckOutEvent(name, startTime, endTime!!, info, notes)
+            EventTypes.CHECK_IN -> CheckinEvent(name, startTime!!, endTime, info, notes)
+            EventTypes.PICK_UP -> PickupEvent(name, startTime!!, endTime, info, notes)
+            else -> this
+        }
     }
 
     /**
@@ -88,107 +100,61 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
 
  */
 
-    companion object{
-        private const val TIME = """\d{4}"""
+
+    companion object {
+        private const val FLIGHT_DAY_NAME = "Flight Day"
+
+
         private const val ONE_DAY = 86400L
 
-        fun parse(input: String, date: LocalDate, legend: Map<String, String> = emptyMap()): Event?{
-            require ('\n' !in input.trim()) { "Only parse single lines into a single event!" }
 
-            val name = input.words().first().let{ n ->
-                legend[n]?.let { ln -> "$n ($ln)"} ?: n
-            }
-            println("$date - INPUT IS $input")
+
+        fun dayOver(name: String, date: LocalDate) = RouteDayEvent(
+            name,
+            date.startInstant(),
+            date.endInstant()
+        )
+
+        /**
+         * Make a duty event from a checkin and checkout event
+         */
+        fun dutyEvent(checkInEvent: CheckinEvent, checkOutEvent: CheckOutEvent): Event =
+            Event(
+                name = FLIGHT_DAY_NAME,
+                type = EventTypes.DUTY,
+                startTime = checkInEvent.startTime,
+                endTime = checkOutEvent.endTime,
+                info = checkInEvent.info,
+                notes = checkInEvent.notes
+            )
+
+        /**
+         * Parse an event from a string, date and legend
+         */
+        fun parse(
+            input: String,
+            date: LocalDate,
+            legend: Map<String, String> = emptyMap()
+        ): Event? {
+            require('\n' !in input.trim()) { "Only parse single lines into a single event!" }
+
+            val constructorData = EventConstructorData(input, date, legend)
+
+            // println("DEBUG - $date - INPUT IS $input")
             return when {
-                input matches leaveRegex -> {
-                    val timeStart = date.atStartOfDay(ZoneOffset.UTC).toInstant() // leave is an aLL DAY event, and must start and end at midnight UTC
-                    val timeEnd = date.atEndOfDay(ZoneOffset.UTC).toInstant() // leave is an aLL DAY event, and must start and end at midnight UTC
-                    Event(name, EventTypes.LEAVE, timeStart, timeEnd)
-                }
+                input matches leaveRegex        -> LeaveEvent(constructorData)
+                input matches checkInRegex      -> CheckinEvent(constructorData)
+                input matches checkOutRegex     -> CheckOutEvent(constructorData)
+                input matches trainingRegex     -> TrainingEvent(constructorData)
+                input matches standbyRegex      -> StandbyEvent(constructorData)
+                input matches flightRegex       -> FlightEvent(constructorData)
+                input matches clickRegex        -> ClickEvent(constructorData)
+                input matches hotelRegex        -> HotelEvent(constructorData)
+                input matches pickupRegex       -> PickupEvent(constructorData)
+                input matches dayOverRegex      -> RouteDayEvent(constructorData)
 
-                input matches checkInRegex -> {
-                    val results = checkInRegex.find(input)!!.groupValues
-                    val timeStart = results[1].timeStringToInstant(date)
-                    CheckinEvent(name, timeStart, null)
-                }
-
-                input matches checkOutRegex -> {
-                    val results = checkOutRegex.find(input)!!.groupValues
-                    val timeEnd = results[1].timeStringToInstant(date)
-                    CheckOutEvent(name, null, timeEnd)
-                }
-
-                input matches trainingRegex -> {
-                    val words = input.words()
-                    val timeStart: Instant? = words.getOrNull(2)?.timeStringToInstant(date)
-                    val timeEnd: Instant? = words.getOrNull(3)?.timeStringToInstant(date)
-                    Event(name, EventTypes.TRAINING, timeStart, timeEnd) // training events are always main events, times are filled in by [Day]
-                }
-
-                input matches standbyRegex -> {
-                    val results = standbyRegex.find(input)!!.groupValues
-                    val timeStart = results[1].timeStringToInstant(date)
-                    val timeEnd = results[2].timeStringToInstant(date).let{
-                        if (it > timeStart) it else it.plusSeconds(ONE_DAY)
-                    }
-                    Event(name, EventTypes.STANDBY, timeStart, timeEnd)
-                }
-
-                input matches flightRegex -> {
-                    // KL 1929 AMS 1010 1135 GVA E75 89010 RI
-                    // will become KL1929 AMS - GVA with times and info "E75 89010 RI"
-                    val results = flightRegex.find(input)!!.groupValues
-                    val flightName = results[1].filter{it != ' '} + " ${results[2]} - ${results[5]}"
-                    val timeStart = results[3].timeStringToInstant(date)
-                    val timeEnd = results[4].timeStringToInstant(date)
-                    Event(flightName, EventTypes.FLIGHT, timeStart, timeEnd, info = results[6].trim())
-                }
-
-                input matches clickRegex -> {
-                    val results = clickRegex.find(input)!!.groupValues
-                    val timeStart = results[1].timeStringToInstant(date)
-                    val timeEnd = results[2].timeStringToInstant(date)
-                    Event(name, EventTypes.CLICK, timeStart, timeEnd)
-                }
-
-                // a hotel event doesn't have a start- or endtime when first parsed. This should be taken care of by calling Day parser.
-                // A hotel event WILL have a start and end when saved to database
-                input matches hotelRegex -> {
-                    val results = hotelRegex.find(input)!!.groupValues
-                    val hotelKey = results[1]
-                    HotelEvent(results[0], null, null, info = legend[hotelKey] ?: "---")
-                }
-
-                input matches pickupRegex -> {
-                    val timeStart = pickupRegex.find(input)!!.groupValues[1].timeStringToInstant(date)
-                    PickupEvent(name, timeStart, null)
-                }
-
-                input matches dayOverRegex -> {
-                    Event(name, EventTypes.ROUTE_DAY, date.atTime(12,0).toInstant(ZoneOffset.UTC), null)
-                }
-
-                else -> null.also { println("No event found in $input")}
+                else -> null.also { println("No event found in $input") }
             }
-
-
         }
-
-        private fun String.timeStringToInstant(date: LocalDate): Instant = LocalTime.parse(this, DateTimeFormatter.ofPattern("HHmm")).atDate(date).toInstant(ZoneOffset.UTC)
-
-        private val leaveRegex = """(?:L[A-Z]+|SL[A-Z]+)\s(?:R\s)?[A-Z]{3}\s($TIME)\s($TIME)""".toRegex()
-        private val checkInRegex = """(?:C/I|S/U)\s(?:[A-Z]{3})\s(\d{4})""".toRegex()
-        private val checkOutRegex = """C/O\s(\d{4})\s(?:[A-Z]{3}).*""".toRegex()
-        private val trainingRegex = """T[A-Z]+.*""".toRegex()
-        private val standbyRegex = """(?:RE[A-Z0-9]+|WTV)\s[A-Z]{3}\s($TIME)\s($TIME).*""".toRegex()
-        private val dayOverRegex = """X""".toRegex()
-
-        //results: [0] = whole line, [1] = flightnumber, [2] = orig, [3] = tOut, [4] = tIn, [5] = dest, [6] = extra info
-        private val flightRegex = """((?:KL|WA)\s?\d{2,5})\s([A-Z]{3})\s($TIME)\s($TIME)\s([A-Z]{3})(.*)""".toRegex()
-
-        private val hotelRegex = """(H\d+)\s([A-Z]{3})""".toRegex()
-        private val clickRegex = """CLICK\s[A-Z]{3}\s($TIME)\s($TIME)""".toRegex()
-        private val pickupRegex = """Pick Up ($TIME)""".toRegex()
-
     }
 }

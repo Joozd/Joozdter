@@ -2,7 +2,6 @@ package nl.joozd.joozdter.data.events
 
 import nl.joozd.joozdter.data.Day
 import nl.joozd.joozdter.data.EventTypes
-import nl.joozd.joozdter.utils.extensions.replaceValue
 import java.time.Instant
 
 class CheckOutEvent(name: String,
@@ -11,6 +10,9 @@ class CheckOutEvent(name: String,
                     info: String = "",
                     notes: String = ""
 ): CompleteableEvent(name, EventTypes.CHECK_OUT, startTime, endTime, info, notes){
+    internal constructor(d: EventConstructorData) :
+            this(d.name(), null, d.checkOutTimeEnd())
+
     override fun completeTimes(today: Day, nextDay: Day?): Event {
         val startTime: Instant? = today.getLastEventBefore(this.endTime!!)?.endTime
             ?: this.endTime.minusSeconds(STANDARD_DURATION)

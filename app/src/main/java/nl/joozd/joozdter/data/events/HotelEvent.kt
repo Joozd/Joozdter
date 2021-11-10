@@ -5,6 +5,7 @@ import nl.joozd.joozdter.data.EventTypes
 import nl.joozd.joozdter.utils.extensions.endInstant
 import nl.joozd.joozdter.utils.extensions.startInstant
 import java.time.Instant
+import java.time.LocalDate
 
 /**
  * a HOTEL Event
@@ -15,10 +16,12 @@ class HotelEvent(name: String,
                  info: String = "",
                  notes: String = ""
 ): CompleteableEvent(name, EventTypes.HOTEL, startTime, endTime, info, notes){
+    internal constructor(constructorData: EventConstructorData) : this(constructorData.name(), null, null, constructorData.hotelInfo())
+
     override fun completeTimes(today: Day, nextDay: Day?): Event {
         val startTime: Instant = today.getLastTypedEvent(eventsBeforeHotel)?.endTime
                 ?: today.date.startInstant()
-        val endTime = nextDay?.startOfDay ?: today.date.endInstant()
+        val endTime = nextDay?.startOfDay() ?: today.date.endInstant()
         return this.copy(startTime = startTime, endTime = endTime)
     }
 

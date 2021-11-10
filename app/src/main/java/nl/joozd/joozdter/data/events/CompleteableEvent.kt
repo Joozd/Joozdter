@@ -4,6 +4,9 @@ import nl.joozd.joozdter.data.Day
 import nl.joozd.joozdter.data.EventTypes
 import java.time.Instant
 
+/**
+ * Events that need their time completed after initial parsing must implement this.
+ */
 abstract class CompleteableEvent(name: String,
                                  type: EventTypes,
                                  startTime: Instant?,

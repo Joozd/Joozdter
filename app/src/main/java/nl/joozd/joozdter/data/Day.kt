@@ -2,8 +2,7 @@ package nl.joozd.joozdter.data
 
 import nl.joozd.joozdter.utils.InstantRange
 import nl.joozd.joozdter.data.EventTypes.*
-import nl.joozd.joozdter.data.events.CompleteableEvent
-import nl.joozd.joozdter.data.events.Event
+import nl.joozd.joozdter.data.events.*
 import nl.joozd.joozdter.data.events.getEventsThatNeedCompleting
 import nl.joozd.joozdter.utils.extensions.replaceValue
 import java.time.*
@@ -31,17 +30,23 @@ class Day(val date: LocalDate, val events: List<Event>){
     }
 
     /**
+     * Get the start time of the first event of this day
+     */
+    fun startOfDay(): Instant = getFirstEvent()?.startTime ?: standardStartTime()
+
+    override fun toString(): String = "Day: $date\nEvents:\n${events.joinToString("\n")}"
+
+
+    /**
      * replace a CompleteableEvent by its version with completed times
      */
     private fun MutableList<Event>.updateTimesForEvent(event: CompleteableEvent, nextDay: Day?){
         this.replaceValue(event, event.completeTimes(this@Day, nextDay))
     }
 
-    val startOfDay: Instant get() = events.minByOrNull { it.startTime ?: Instant.MAX }?.startTime ?: standardStartTime()
-
-    override fun toString(): String = "Day: $date\nEvents:\n${events.joinToString("\n")}"
-
-
+    /**
+     * Generate a standard start
+     */
     private fun standardStartTime(): Instant = ZonedDateTime.of(date, LocalTime.of(5,30), ZoneId.of("Europe/Amsterdam")).toInstant()
 
     /**
@@ -66,88 +71,128 @@ class Day(val date: LocalDate, val events: List<Event>){
          * @param dayContentsString: String that has all the data for this day, as found in roster.
          * This will always start with the "day" (eg. Mon03) on its own line.
          * @param legend: A legend for abbreviations that might be found in this day
+         *
+         * At this point, we have all the events in the roster,
+         * but not all have start and/or end times.
+         * These have to be added and/or calculated.
+         * Since that needs info from the next day as well (for HOTEL end times) this is not done here.
+         * When all days have been created, map the list with all days to it.completeTimes(allDays)
          */
         fun of(dayString: String, dayContentsString: String, legend: Map<String, String>? = null, period: InstantRange): Day?{
-            var foundEvents = ArrayList<Event>()
-
+            //dayLines is the part from top of roster where all the dates are in one wide table
             val dayLines = dayString.lines()
 
+            //data sanity check
             require(dayContentsString.startsWith(dayLines.first())) { "Day in $dayLines does not match day in $dayContentsString" }
-            when (dayLines.size) {
-                1 -> return null // this is a date without any roster info (can happen at start of employment)
-                2 -> { /*this is a route day, will lead to a day with only a "day over" event*/
-                    val date = getDate(dayLines.first(), period) ?: return null
-                    val event = Event(dayLines[1], ROUTE_DAY, date.atTime(12,0).toInstant(ZoneOffset.UTC), null)
-                    return Day(date,listOf(event))
-                }
-                4 -> { /*this is a normal day*/ }
-                else -> error ("Day.of(): Malformed [dayLines] does not have 1, 2 or 4 lines: $dayLines")
 
-
-            }
-            //require(dayLines.size == 4) { "Malformed dayLines: $dayLines, must be 4 lines (day, type, start, end)"}
-
-            // extraMessage should be added as [Event.info] to the day's event that matches the times in [dayString]
-            val extraMessage = extraMessageRegex.find(dayContentsString)?.groupValues?.get(1)
-
-            // split [dayContentsString] into lines, and remove extra info and dayString line
-            val lines = (extraMessage?.let{
-                dayContentsString.replace(it, "").lines()
-            } ?: dayContentsString.lines())
-                .drop(1)
-                .filter {it.isNotBlank()}
-
-            val date = dayLines.firstOrNull()?.let { getDate(it, period) } ?: return null
-            val dayStart = LocalTime.parse(dayLines[2], timeFormatter).atDate(date).toInstant(ZoneOffset.UTC)
-            val dayEnd = LocalTime.parse(dayLines[3], timeFormatter).atDate(date).toInstant(ZoneOffset.UTC)
-
-            //println(lines.joinToString("\n", postfix = "\n***") { ".$it"})
-
-            foundEvents.addAll(lines.mapNotNull { Event.parse(it, date, legend ?: emptyMap()) })
-
-            // Add texts like TLC or TSOD to the next event if it is not the main activity (these have null times and are not HOTEL)
-            foundEvents.filter { it.startTime == null && it.endTime == null && it.type !in listOf(HOTEL, ROUTE_DAY)}.forEach{
-                eventThatIsANote ->
-                val index = foundEvents.indexOf(eventThatIsANote)
-                foundEvents.remove(eventThatIsANote)
-                foundEvents.getOrNull(index)?.let{ e ->
-                    foundEvents[index] = e.copy(name = e.name + " * " + eventThatIsANote.name)
-                }
+            // If day is empty, parse and return it.
+            parseEmptyDayIfAble(dayLines, period)?.let{
+                return it
             }
 
-            //add a DUTY event if a Checkin and Checkout event are present
-            foundEvents.firstOrNull { it.type == EventTypes.CHECK_IN }?.let{ ci ->
-                foundEvents.firstOrNull { it.type == EventTypes.CHECK_OUT }?.let{ co ->
-                    Event(name = FLIGHT_DAY_NAME, type = DUTY, startTime = ci.startTime, endTime = co.endTime, info = ci.info, notes = ci.notes)
+            // If [foundEvents] returns null, bad data was received and no Day will be parsed.
+            val foundEvents = parseEvents(dayContentsString, period, legend) ?: return null
+
+            val date = getDateFromLines(dayLines, period) ?: return null
+            return Day(date, foundEvents)
+        }
+
+        private fun parseEvents(dayContentsString: String,
+                                period: InstantRange,
+                                legend: Map<String, String>?
+        ) : List<Event>? {
+            //If no date found, no Day will be parsed
+            val date = getDateFromLines(dayContentsString.lines(), period) ?: return null
+            val extraMessage = dayContentsString.getExtraMessage()
+            val lines = dayContentsString.linesWithEvents(extraMessage)
+            return parseLines(lines, date, legend)
+                .addEmptyEventsToNextEvent()    // Add texts like TLC or TSOD to the next event if it is not the main activity (these have null times and are not HOTEL)
+                .addDutyEvent()                 //add a DUTY event if a Checkin and Checkout event are present
+                .addExtraMessage(extraMessage)  // add extraMessage to relevant items
+                .addFdpInfo(dayContentsString)  // add fdp info as a note to relevant items
+        }
+
+        private fun getDateFromLines(dayLines: List<String>, period: InstantRange): LocalDate? =
+            dayLines.firstOrNull()?.let { getDate(it, period) }
+
+
+        /**
+         * Get extraMessage from a dayContentsString
+         */
+        private fun String.getExtraMessage(): String? {
+            return extraMessageRegex.find(this)?.groupValues?.get(1)
+        }
+
+        /**
+         * Remove events that are a note, and add that note as note to the next event
+         * if there is any.
+         * (If there is none, just remove it)
+         */
+        private fun List<Event>.addEmptyEventsToNextEvent(): List<Event>{
+            val workingList = ArrayList(this)
+            filter { it.isANote() }.forEach{
+                    eventThatIsANote ->
+                val index = indexOf(eventThatIsANote)
+                workingList.remove(eventThatIsANote)
+                workingList.getOrNull(index)?.let{ e ->
+                    workingList[index] = e.copy(name = e.name + " * " + eventThatIsANote.name)
+                }
+            }
+            return workingList
+        }
+
+        private fun List<Event>.addDutyEvent(): List<Event>{
+            firstOrNull { it is CheckinEvent }?.let{ ci ->
+                firstOrNull { it is CheckOutEvent }?.let{ co ->
+                    Event.dutyEvent(ci as CheckinEvent, co as CheckOutEvent)
                 }
             }?.let{
-                foundEvents.add(it)
+                return this + it
             }
-
-            val fdp = fdpRegex.find(dayContentsString)?.groupValues?.let{ r ->
-                Duration.ofMinutes(r[1].toLong() * 60 + r[2].toLong())
-            }
-
-            /**
-             * Add extraMessage to relevant events:
-             */
-            if (extraMessage != null) {
-                getMainEvents(foundEvents).forEach {
-                    foundEvents.replaceValue(it, it.copy(info = extraMessage))
-                }
-            }
-
-            /**
-             * At this point, we have all the events in the roster,
-             * but not all have start and/or end times.
-             * These have to be added and/or calculated.
-             * Since that needs info from the next day as well (for HOTEL end times) this is not done here.
-             * When all days have been created, map the list with all days to it.completeTimes(allDays)
-             */
-
-
-            return Day(date, foundEvents) // TODO should not be emptylist obviously
+                ?: return this
         }
+
+        /**
+         * Add extraMessage to relevant events:
+         */
+        private fun List<Event>.addExtraMessage(extraMessage: String?): List<Event>{
+            if (extraMessage == null) return this
+            val mainEvents = getMainEvents(this)
+            return this.map { if (it in mainEvents) it.copy(info = extraMessage) else it}
+        }
+
+        /**
+         * Add fdp info to relevant Events
+         */
+        private fun List<Event>.addFdpInfo(dayContentsString: String): List<Event>{
+            val mainEvents = getMainEvents(this)
+
+            return fdpRegex.find(dayContentsString)?.value?.let{ fdpString ->
+                this.map{ if (it in mainEvents) it.copy(notes = "$fdpString\n" + it.notes) else it}
+            } ?: this
+        }
+
+        /**
+         * Checks if this event is actually a note
+         */
+        private fun Event.isANote() = startTime == null && endTime == null && type !in listOf(HOTEL, ROUTE_DAY)
+
+        /**
+         * Parse lines into a [Day]
+         */
+        private fun parseLines(
+            lines: List<String>,
+            date: LocalDate,
+            legend: Map<String, String>?
+        ) = lines.mapNotNull { Event.parse(it, date, legend ?: emptyMap()) }
+
+        /**
+         * Remove [extraMessage] and first line (which is the day part) from a String.
+         */
+        private fun String.linesWithEvents(extraMessage: String?) =
+            this.replace(extraMessage ?: "", "").lines()
+                .drop(1)
+                .filter { it.isNotBlank() }
 
         private fun getDate(dayString: String, period: InstantRange): LocalDate?{
             val dayOfMonth = dayString.filter { it.isDigit() }.toInt()
@@ -161,13 +206,25 @@ class Day(val date: LocalDate, val events: List<Event>){
             return events.filter {it.type in listOf(DUTY, CHECK_IN, TRAINING, STANDBY)}
         }
 
-        private val timeFormatter = DateTimeFormatter.ofPattern("HHmm")
+        /**
+         * returns a day if it is an empty day or a day over. Throws an error on malformed data
+         */
+        fun parseEmptyDayIfAble(dayLines: List<String>, period: InstantRange): Day? {
+            require(dayLines.isNotEmpty()) { "Cannot parse empty text into a Day"}
+            if (dayLines.size == 4) return null // this is a normal day
+            val date = getDate(dayLines.first(), period)
+                ?: error ("Cannot get day from ${dayLines.first()}")
+            return when (dayLines.size) {
+                1 -> Day(date, emptyList()) // empty day, can happen at start of employment
+                2 -> { /*this is a route day, will lead to a day with only a "day over" event*/
+                    val event = Event.dayOver(dayLines[1], date)
+                    Day(date, listOf(event))
+                }
+                else -> error("Day.of(): Malformed [dayLines] does not have 1, 2 or 4 lines: $dayLines")
+            }
+        }
 
-        private val fdpRegex = """\[FDP (\d\d):(\d\d)]""".toRegex()
-        private val extraMessageRegex = """(To c/m:.*)""".toRegex(RegexOption.DOT_MATCHES_ALL)
-        private val mainEventRegex = """(?:^T[A-Z].*|^S/U\s.*|^C/I\s.*|^LV[A-Z]+\s.*|^SL[A-Z]+\s.*)""".toRegex()
-
-        private const val FLIGHT_DAY_NAME = "Flight Day"
+        // private val timeFormatter = DateTimeFormatter.ofPattern("HHmm")
 
     }
 }

@@ -20,7 +20,7 @@ class RosterParserTest {
     @Test
     fun canParseFile(){
         println("canParseFile()")
-        val pages = PdfGrabber("j1").read()
+        val pages = PdfGrabber("j3").read()
         assert(pages.isNotEmpty())
 
         val days = RosterParser(pages).parse()?.let{
