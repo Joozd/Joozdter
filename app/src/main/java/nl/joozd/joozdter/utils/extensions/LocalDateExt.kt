@@ -10,4 +10,26 @@ fun LocalDate.atEndOfDay(zone: ZoneId): ZonedDateTime = this.plusDays(1).atStart
 
 fun LocalDate.atEndOfDay(): LocalDateTime = this.plusDays(1).atStartOfDay()
 
-fun Instant.toLocalDate(zoneOffset: ZoneOffset = ZoneOffset.UTC) = LocalDateTime.ofInstant(this, zoneOffset).toLocalDate()
+/**
+ * Get the Instant at which this day starts
+ */
+fun LocalDate.startInstant(zoneOffset: ZoneOffset = ZoneOffset.UTC): Instant =
+    this.atStartOfDay(zoneOffset).toInstant()
+
+/**
+ * Get the epochSecond at which this day starts
+ */
+fun LocalDate.startEpochSecond(zoneOffset: ZoneOffset = ZoneOffset.UTC): Long =
+    this.startInstant(zoneOffset).epochSecond
+
+/**
+ * Get the Instant at which this day starts
+ */
+fun LocalDate.endInstant(zoneOffset: ZoneOffset = ZoneOffset.UTC): Instant =
+    this.atEndOfDay(zoneOffset).toInstant()
+
+/**
+ * Get the epochSecond at which this day ends
+ */
+fun LocalDate.endEpochSecond(zoneOffset: ZoneOffset = ZoneOffset.UTC) =
+    this.endInstant(zoneOffset).epochSecond

@@ -1,8 +1,11 @@
-package nl.joozd.joozdter.data
+package nl.joozd.joozdter.data.events
 
+import nl.joozd.joozdter.data.Day
+import nl.joozd.joozdter.data.EventTypes
 import nl.joozd.joozdter.data.extensions.words
 import nl.joozd.joozdter.data.room.RoomEvent
 import nl.joozd.joozdter.utils.extensions.atEndOfDay
+import nl.joozd.joozdter.utils.extensions.toLocalDate
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -33,10 +36,27 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
     ) = Event(name, type, startTime, endTime, info, notes)
 
     /**
-     * [startTime] and [endTime] may not be null, will return null otherwise
+     * Convert an Event to a RoomEvent.
+     * startTime and endTime should not both be null as that will mean the resulting object
+     * will not be found in database anymore.
      */
-    fun toRoomEvent(): RoomEvent? = if (startTime == null || endTime == null) null
-    else RoomEvent(-1, name, type.value, startTime.epochSecond, endTime.epochSecond, info, notes)
+    fun toRoomEvent(): RoomEvent {
+        return RoomEvent(
+            -1,
+            name,
+            type.value,
+            startTime?.epochSecond,
+            endTime?.epochSecond,
+            info,
+            notes
+        )
+    }
+
+    /**
+     * Get the date of this event.
+     */
+    fun date(zoneOffset: ZoneOffset = ZoneOffset.UTC): LocalDate? =
+        startTime?.toLocalDate(zoneOffset) ?: endTime?.toLocalDate(zoneOffset)
 
     override fun equals(other: Any?): Boolean {
         if (other !is Event) return false
@@ -57,6 +77,16 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
         result = 31 * result + notes.hashCode()
         return result
     }
+/*
+    interface CompleteableEvent {
+        /**
+         * Complete the times of this event with the information from [today] or [nextDay]
+         * eg. the end time of a [HotelEvent] or [PickupEvent]
+         */
+        abstract fun completeTimes(today: Day, nextDay: Day?): Event
+    }
+
+ */
 
     companion object{
         private const val TIME = """\d{4}"""
@@ -79,13 +109,13 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
                 input matches checkInRegex -> {
                     val results = checkInRegex.find(input)!!.groupValues
                     val timeStart = results[1].timeStringToInstant(date)
-                    Event(name, EventTypes.CHECK_IN, timeStart, null)
+                    CheckinEvent(name, timeStart, null)
                 }
 
                 input matches checkOutRegex -> {
                     val results = checkOutRegex.find(input)!!.groupValues
                     val timeEnd = results[1].timeStringToInstant(date)
-                    Event(name, EventTypes.CHECK_OUT, null, timeEnd)
+                    CheckOutEvent(name, null, timeEnd)
                 }
 
                 input matches trainingRegex -> {
@@ -126,12 +156,12 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
                 input matches hotelRegex -> {
                     val results = hotelRegex.find(input)!!.groupValues
                     val hotelKey = results[1]
-                    Event(results[0], EventTypes.HOTEL, null, null, info = legend[hotelKey] ?: "---")
+                    HotelEvent(results[0], null, null, info = legend[hotelKey] ?: "---")
                 }
 
                 input matches pickupRegex -> {
                     val timeStart = pickupRegex.find(input)!!.groupValues[1].timeStringToInstant(date)
-                    Event(name, EventTypes.PICK_UP, timeStart, null)
+                    PickupEvent(name, timeStart, null)
                 }
 
                 input matches dayOverRegex -> {

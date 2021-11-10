@@ -1,26 +1,28 @@
 package nl.joozd.joozdter.data
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import nl.joozd.joozdter.App
+import nl.joozd.joozdter.data.events.Event
+import nl.joozd.joozdter.data.helpers.EventsMap
 import nl.joozd.joozdter.data.room.EventDao
 import nl.joozd.joozdter.data.room.EventsDatabase
-import nl.joozd.joozdter.utils.extensions.atEndOfDay
-import nl.joozd.joozdter.utils.extensions.toLocalDate
+import nl.joozd.joozdter.data.room.RoomEvent
+import nl.joozd.joozdter.utils.extensions.endEpochSecond
+import nl.joozd.joozdter.utils.extensions.startEpochSecond
 import java.time.LocalDate
-import java.time.ZoneOffset
 
 /**
  * The repository is our one-stop-shop for all things saving and loading from external resources
  * such as Room DB or Calendar API.
+ * Get an instance with [getInstance].
  */
 class Repository private constructor(private val eventDao: EventDao) {
-    suspend fun allEvents(): List<Event> = eventDao.getAll().map { it.toEvent() }
-
-    suspend fun getDay(date: LocalDate): Day{
-        val startTime = date.atStartOfDay(ZoneOffset.UTC).toInstant().epochSecond
-        val endTime = date.atEndOfDay(ZoneOffset.UTC).toInstant().epochSecond
-        val events = eventDao.getEvents(startTime, endTime).map {it.toEvent()}
-        return Day(date, events)
-    }
+    /**
+     * Get a single day from DB, or null if that day is not found in DB
+     */
+    suspend fun getDay(date: LocalDate): Day? =
+        getDays(date..date).firstOrNull()
 
     /**
      * Will get all Events from DB and puts them into Days.
@@ -31,30 +33,40 @@ class Repository private constructor(private val eventDao: EventDao) {
      * Gets all events in [dateRange] and puts them into [Day] objects.
      * Days without events are left out.
      */
-    suspend fun getDays(dateRange: ClosedRange<LocalDate>): List<Day>{
-        val startTime = dateRange.start.atStartOfDay(ZoneOffset.UTC).toInstant().epochSecond
-        val endTime = dateRange.endInclusive.atEndOfDay(ZoneOffset.UTC).toInstant().epochSecond
+    suspend fun getDays(dateRange: ClosedRange<LocalDate>): List<Day> = withContext(Dispatchers.IO){
+        val startTime = dateRange.start.startEpochSecond()
+        val endTime = dateRange.endInclusive.endEpochSecond()
         val events = eventDao.getEvents(startTime, endTime).map {it.toEvent()}
-        return eventsToDays(events)
+
+        eventsToDays(events)
     }
 
     /**
      * Puts a list of [Event] into Days
      */
     private fun eventsToDays(events: List<Event>): List<Day>{
-        val eventsMap = HashMap<LocalDate, MutableList<Event>>()
-        events.map { it.startTime!!.toLocalDate()}.toSet().forEach {
-            eventsMap[it] = ArrayList()
-        }
-        events.forEach {
-            eventsMap[it.startTime!!.toLocalDate()]!!.add(it)
-        }
-        return eventsMap.map{
-            Day(it.key, it.value)
-        }
+        val eventsMap = EventsMap(events)
+        return eventsMap.days()
     }
 
+    /**
+     * get events from EventDao
+     */
+    private suspend fun getEvents(startEpochSecond: Long, endEpochSecond: Long): List<Event> {
+        val roomEvents = eventDao.getEvents(startEpochSecond, endEpochSecond)
+        return roomEventsToEvents(roomEvents)
+    }
 
+    /**
+     * Get all events from Dao
+     */
+    private suspend fun allEvents(): List<Event> = roomEventsToEvents(eventDao.getAll())
+
+
+    /**
+     * Converts a Collection of [RoomEvent] to a List of [Event]
+     */
+    private fun roomEventsToEvents(roomEvents: Collection<RoomEvent>) = roomEvents.map { it.toEvent() }
 
     companion object{
         private var INSTANCE: Repository? = null
@@ -64,6 +76,5 @@ class Repository private constructor(private val eventDao: EventDao) {
             ?: Repository(EventsDatabase.getDatabase(App.instance).eventDao()).also{
                 INSTANCE = it
             }
-
     }
 }

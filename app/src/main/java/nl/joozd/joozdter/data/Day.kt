@@ -1,8 +1,10 @@
 package nl.joozd.joozdter.data
 
 import nl.joozd.joozdter.utils.InstantRange
-import nl.joozd.joozdter.utils.extensions.atEndOfDay
 import nl.joozd.joozdter.data.EventTypes.*
+import nl.joozd.joozdter.data.events.CompleteableEvent
+import nl.joozd.joozdter.data.events.Event
+import nl.joozd.joozdter.data.events.getEventsThatNeedCompleting
 import nl.joozd.joozdter.utils.extensions.replaceValue
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -18,40 +20,23 @@ class Day(val date: LocalDate, val events: List<Event>){
     /**
      * Completes times for this day.
      * @return a [Day] where all [events] have their times completed
-     * Events that need completing:
-     * [HOTEL], [PICK_UP], [CHECK_IN], [CHECK_OUT]
      */
     fun completeTimes(allDays: Collection<Day>): Day{
         val nextDay = getNextWorkingDay(allDays)
         val currentEvents = events.toMutableList()
-        currentEvents.firstOrNull{it.type == HOTEL}?.let{ hotelEvent ->
-            val startTime: Instant = currentEvents.firstOrNull { it.type in listOf(DUTY, CHECK_OUT) }?.endTime ?: date.atStartOfDay(ZoneOffset.UTC).toInstant()
-            val endTime = nextDay?.startOfDay ?: date.atEndOfDay(ZoneOffset.UTC).toInstant()
-            currentEvents.replaceValue(hotelEvent, hotelEvent.copy(startTime = startTime, endTime = endTime))
+        events.getEventsThatNeedCompleting().forEach{
+            currentEvents.updateTimesForEvent(it, nextDay)
         }
-
-        currentEvents.firstOrNull{it.type == PICK_UP}?.let{ pickupEvent ->
-            val endTime: Instant? = currentEvents.firstOrNull { it.type in listOf(DUTY, CHECK_IN) }?.startTime ?: pickupEvent.startTime!!.plusSeconds(60*30L)
-            //if no endTime for pickup found it will be half an hour
-            currentEvents.replaceValue(pickupEvent, pickupEvent.copy(endTime = endTime))
-        }
-
-        //checkin ends at first event after checkin
-        currentEvents.firstOrNull{it.type == CHECK_IN}?.let{ checkInEvent ->
-            val endTime: Instant? = currentEvents.filter{it.startTime ?: Instant.MIN > checkInEvent.startTime!!}.minByOrNull { it.startTime!! }?.startTime ?: checkInEvent.startTime!!.plusSeconds(60*60L)
-            //if no endTime for checkin found it will be one hour
-            currentEvents.replaceValue(checkInEvent, checkInEvent.copy(endTime = endTime))
-        }
-
-        //checkout starts after last event before checkout
-        currentEvents.firstOrNull{it.type == CHECK_OUT}?.let{ checkOutEvent ->
-            val startTime: Instant? = currentEvents.filter{it.endTime ?: Instant.MAX < checkOutEvent.endTime!!}.maxByOrNull { it.endTime!! }?.endTime ?: checkOutEvent.endTime!!.minusSeconds(30*60L)
-            //if no startTime for checkout found it will be 30 minutes
-            currentEvents.replaceValue(checkOutEvent, checkOutEvent.copy(startTime = startTime))
-        }
-
         return Day(date, currentEvents)
     }
+
+    /**
+     * replace a CompleteableEvent by its version with completed times
+     */
+    private fun MutableList<Event>.updateTimesForEvent(event: CompleteableEvent, nextDay: Day?){
+        this.replaceValue(event, event.completeTimes(this@Day, nextDay))
+    }
+
     val startOfDay: Instant get() = events.minByOrNull { it.startTime ?: Instant.MAX }?.startTime ?: standardStartTime()
 
     override fun toString(): String = "Day: $date\nEvents:\n${events.joinToString("\n")}"
@@ -106,7 +91,7 @@ class Day(val date: LocalDate, val events: List<Event>){
             val extraMessage = extraMessageRegex.find(dayContentsString)?.groupValues?.get(1)
 
             // split [dayContentsString] into lines, and remove extra info and dayString line
-            var lines = (extraMessage?.let{
+            val lines = (extraMessage?.let{
                 dayContentsString.replace(it, "").lines()
             } ?: dayContentsString.lines())
                 .drop(1)
@@ -116,16 +101,6 @@ class Day(val date: LocalDate, val events: List<Event>){
             val dayStart = LocalTime.parse(dayLines[2], timeFormatter).atDate(date).toInstant(ZoneOffset.UTC)
             val dayEnd = LocalTime.parse(dayLines[3], timeFormatter).atDate(date).toInstant(ZoneOffset.UTC)
 
-            /*
-            //pop mainEventLine out of [lines], parse it and add it to [foundEvents]
-            lines.firstOrNull{ it matches mainEventRegex}?.also{
-                lines = lines.filter { l -> l != it }
-            }?.let{ l ->
-                Event.parse(l, date)?.let{
-                    it.copy(startTime = it.startTime ?: dayStart, endTime = it.endTime ?: dayEnd, info = extraMessage ?: "")?.let { e -> foundEvents.add(e) }
-                }
-            }
-            */
             //println(lines.joinToString("\n", postfix = "\n***") { ".$it"})
 
             foundEvents.addAll(lines.mapNotNull { Event.parse(it, date, legend ?: emptyMap()) })
@@ -143,7 +118,7 @@ class Day(val date: LocalDate, val events: List<Event>){
             //add a DUTY event if a Checkin and Checkout event are present
             foundEvents.firstOrNull { it.type == EventTypes.CHECK_IN }?.let{ ci ->
                 foundEvents.firstOrNull { it.type == EventTypes.CHECK_OUT }?.let{ co ->
-                    Event(name = FLIGHT_DAY_NAME, type = EventTypes.DUTY, startTime = ci.startTime, endTime = co.endTime, info = ci.info, notes = ci.notes)
+                    Event(name = FLIGHT_DAY_NAME, type = DUTY, startTime = ci.startTime, endTime = co.endTime, info = ci.info, notes = ci.notes)
                 }
             }?.let{
                 foundEvents.add(it)
