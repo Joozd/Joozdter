@@ -15,7 +15,7 @@ class HotelEvent(name: String,
                  endTime: Instant?,
                  info: String = "",
                  notes: String = ""
-): CompleteableEvent(name, EventTypes.HOTEL, startTime, endTime, info, notes){
+): Event(name, EventTypes.HOTEL, startTime, endTime, info, notes), CompleteableEvent{
     internal constructor(constructorData: EventConstructorData) : this(constructorData.name(), null, null, constructorData.hotelInfo())
 
     override fun completeTimes(today: Day, nextDay: Day?): Event {
@@ -33,7 +33,8 @@ class HotelEvent(name: String,
                       startTime: Instant?,
                       endTime: Instant?,
                       info: String,
-                      notes: String
+                      notes: String,
+                      id: Long?
     ): HotelEvent{
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         return HotelEvent(name, startTime, endTime, info, notes)

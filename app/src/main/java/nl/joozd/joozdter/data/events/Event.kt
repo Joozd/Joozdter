@@ -18,8 +18,13 @@ import java.time.ZoneOffset
  * @param endTime: Time at which the event ends Can be null if this event doesn't have aen end time (eg. checkIn)
  * @param info: extra info, such as aircraft type, rest margin, hotel name, etc
  * @param notes: Notes, such as crew names, FDP info, etc.
+ * @param id: this Events ID in calendar, null if not inserted in calendar.
  */
-open class Event(val name: String, val type: EventTypes, val startTime: Instant?, val endTime: Instant?, val info: String = "", val notes: String = "") {
+open class Event(val name: String, val type: EventTypes, val startTime: Instant?, val endTime: Instant?, val info: String = "", val notes: String = "", val id: Long? = null) {
+    val startEpochSecond: Long? get() = startTime?.epochSecond
+    val endEpochSecond: Long? get() = startTime?.epochSecond
+
+
     override fun toString(): String = "name: $name\ntype: $type\nstart: $startTime\nend: $endTime\ninfo: $info\nnotes:$notes\n"
 
     /**
@@ -30,8 +35,9 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
                   startTime: Instant? = this.startTime,
                   endTime: Instant? = this.endTime,
                   info: String = this.info,
-                  notes: String = this.notes
-    ) = Event(name, type, startTime, endTime, info, notes)
+                  notes: String = this.notes,
+                  id: Long? = this.id
+    ) = Event(name, type, startTime, endTime, info, notes, id)
 
     /**
      * Convert an Event to a RoomEvent.

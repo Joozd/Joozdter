@@ -9,7 +9,7 @@ class PickupEvent(name: String,
                   endTime: Instant?,
                   info: String = "",
                   notes: String = ""
-): CompleteableEvent(name, EventTypes.PICK_UP, startTime, endTime, info, notes){
+): Event(name, EventTypes.PICK_UP, startTime, endTime, info, notes), CompleteableEvent{
     internal constructor(d: EventConstructorData) :
             this(d.name(), d.pickupTimeStart(), null)
 
@@ -27,7 +27,8 @@ class PickupEvent(name: String,
                       startTime: Instant?,
                       endTime: Instant?,
                       info: String,
-                      notes: String
+                      notes: String,
+                      id: Long?
     ): PickupEvent{
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         require (startTime != null) { "a PickupEvent must have a start time"}

@@ -9,7 +9,7 @@ class CheckinEvent(name: String,
                    endTime: Instant?,
                    info: String = "",
                    notes: String = ""
-): CompleteableEvent(name, EventTypes.CHECK_IN, startTime, endTime, info, notes){
+): Event(name, EventTypes.CHECK_IN, startTime, endTime, info, notes), CompleteableEvent{
     internal constructor(d: EventConstructorData) :
             this(d.name(), d.checkInTimeStart(), null)
 
@@ -25,12 +25,12 @@ class CheckinEvent(name: String,
      * Works like copy in a data class
      */
     override fun copy(name: String,
-                  type: EventTypes,
-                  startTime: Instant?,
-                  endTime: Instant?,
-                  info: String,
-                  notes: String
-    ): CheckinEvent{
+                      type: EventTypes,
+                      startTime: Instant?,
+                      endTime: Instant?,
+                      info: String,
+                      notes: String,
+                      id: Long?): CheckinEvent{
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         require (startTime != null) { "a CheckinEvent must have a start time"}
         return CheckinEvent(name, startTime, endTime, info, notes)

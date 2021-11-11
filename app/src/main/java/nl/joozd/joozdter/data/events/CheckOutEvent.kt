@@ -9,7 +9,7 @@ class CheckOutEvent(name: String,
                     endTime: Instant,
                     info: String = "",
                     notes: String = ""
-): CompleteableEvent(name, EventTypes.CHECK_OUT, startTime, endTime, info, notes){
+): Event(name, EventTypes.CHECK_OUT, startTime, endTime, info, notes), CompleteableEvent{
     internal constructor(d: EventConstructorData) :
             this(d.name(), null, d.checkOutTimeEnd())
 
@@ -28,7 +28,8 @@ class CheckOutEvent(name: String,
                       startTime: Instant?,
                       endTime: Instant?,
                       info: String,
-                      notes: String
+                      notes: String,
+                      id: Long?
     ): CheckOutEvent{
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         require (endTime != null) { "a CheckOutEvent must have an end time"}

@@ -8,7 +8,7 @@ class RouteDayEvent(name: String,
                     endTime: Instant?,
                     info: String = "",
                     notes: String = ""
-): Event(name, EventTypes.ROUTE_DAY, startTime, endTime, info, notes){
+): Event(name, EventTypes.ROUTE_DAY, startTime, endTime, info, notes), AllDayevent{
     internal constructor(d: EventConstructorData):
             this(d.name(), d.dayStart(), d.dayend())
 }
