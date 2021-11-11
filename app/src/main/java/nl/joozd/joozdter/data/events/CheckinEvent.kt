@@ -8,10 +8,12 @@ class CheckinEvent(name: String,
                    startTime: Instant,
                    endTime: Instant?,
                    info: String = "",
-                   notes: String = ""
-): Event(name, EventTypes.CHECK_IN, startTime, endTime, info, notes), CompleteableEvent{
+                   notes: String = "",
+                   id: Long? = null
+): Event(name, EventTypes.CHECK_IN, startTime, endTime, info, notes, id), CompleteableEvent{
     internal constructor(d: EventConstructorData) :
             this(d.name(), d.checkInTimeStart(), null)
+    internal constructor(e: Event): this (e.name, e.startTime!!, e.endTime, e.info, e.notes, e.id)
 
     override fun completeTimes(today: Day, nextDay: Day?): Event {
         //checkin ends at first event after checkin
@@ -33,7 +35,7 @@ class CheckinEvent(name: String,
                       id: Long?): CheckinEvent{
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         require (startTime != null) { "a CheckinEvent must have a start time"}
-        return CheckinEvent(name, startTime, endTime, info, notes)
+        return CheckinEvent(name, startTime, endTime, info, notes, id)
     }
 
     companion object{

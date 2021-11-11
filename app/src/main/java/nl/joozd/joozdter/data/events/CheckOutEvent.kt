@@ -8,10 +8,12 @@ class CheckOutEvent(name: String,
                     startTime: Instant?,
                     endTime: Instant,
                     info: String = "",
-                    notes: String = ""
-): Event(name, EventTypes.CHECK_OUT, startTime, endTime, info, notes), CompleteableEvent{
+                    notes: String = "",
+                    id: Long? = null
+): Event(name, EventTypes.CHECK_OUT, startTime, endTime, info, notes, id), CompleteableEvent{
     internal constructor(d: EventConstructorData) :
             this(d.name(), null, d.checkOutTimeEnd())
+    internal constructor(e: Event): this (e.name, e.startTime, e.endTime!!, e.info, e.notes, e.id)
 
     override fun completeTimes(today: Day, nextDay: Day?): Event {
         val startTime: Instant? = today.getLastEventBefore(this.endTime!!)?.endTime
@@ -33,7 +35,7 @@ class CheckOutEvent(name: String,
     ): CheckOutEvent{
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         require (endTime != null) { "a CheckOutEvent must have an end time"}
-        return CheckOutEvent(name, startTime, endTime, info, notes)
+        return CheckOutEvent(name, startTime, endTime, info, notes, id)
     }
 
     companion object{

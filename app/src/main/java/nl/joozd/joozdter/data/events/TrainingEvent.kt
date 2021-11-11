@@ -7,8 +7,10 @@ class TrainingEvent(name: String,
                     startTime: Instant?,
                     endTime: Instant?,
                     info: String = "",
-                    notes: String = ""
-): Event(name, EventTypes.TRAINING, startTime, endTime, info, notes){
+                    notes: String = "",
+                    id: Long? = null
+): Event(name, EventTypes.TRAINING, startTime, endTime, info, notes, id){
     internal constructor(d: EventConstructorData):
             this(d.name(), d.trainingTimeStart(), d.trainingTimeEnd())
+    internal constructor(e: Event): this (e.name, e.startTime, e.endTime, e.info, e.notes, e.id)
 }

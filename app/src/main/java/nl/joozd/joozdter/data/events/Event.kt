@@ -1,7 +1,6 @@
 package nl.joozd.joozdter.data.events
 
 import nl.joozd.joozdter.data.EventTypes
-import nl.joozd.joozdter.data.extensions.words
 import nl.joozd.joozdter.data.room.RoomEvent
 import nl.joozd.joozdter.utils.extensions.endInstant
 import nl.joozd.joozdter.utils.extensions.startInstant
@@ -41,16 +40,18 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
 
     /**
      * Convert an Event to a RoomEvent.
-     * startTime and endTime should not both be null as that will mean the resulting object
-     * will not be found in database anymore.
+     * startTime and endTime should not be null as only items in calendar will be saved in RoomDB
+     *  and those must have start and end time
      */
     fun toRoomEvent(): RoomEvent {
+        require (id != null) { "Do not store events without ID in DB" }
+        require (startTime != null && endTime != null) { "startTime and endTime must not be null" }
         return RoomEvent(
-            -1,
+            id,
             name,
             type.value,
-            startTime?.epochSecond,
-            endTime?.epochSecond,
+            startTime.epochSecond,
+            endTime.epochSecond,
             info,
             notes
         )
@@ -62,10 +63,17 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
      */
     fun withTypeInstance(): Event{
         return when(type){
-            EventTypes.HOTEL -> HotelEvent(name, startTime, endTime, info, notes)
-            EventTypes.CHECK_OUT -> CheckOutEvent(name, startTime, endTime!!, info, notes)
-            EventTypes.CHECK_IN -> CheckinEvent(name, startTime!!, endTime, info, notes)
-            EventTypes.PICK_UP -> PickupEvent(name, startTime!!, endTime, info, notes)
+            EventTypes.CHECK_OUT -> CheckOutEvent(this)
+            EventTypes.CHECK_IN -> CheckinEvent(this)
+            EventTypes.CLICK -> ClickEvent(this)
+            EventTypes.FLIGHT -> FlightEvent(this)
+            EventTypes.HOTEL -> HotelEvent(this)
+            EventTypes.LEAVE -> LeaveEvent(this)
+            EventTypes.PICK_UP -> PickupEvent(this)
+            EventTypes.ROUTE_DAY -> RouteDayEvent(this)
+            EventTypes.SIMULATOR_DUTY -> SimEvent(this)
+            EventTypes.STANDBY -> StandbyEvent(this)
+            EventTypes.TRAINING -> TrainingEvent(this)
             else -> this
         }
     }
@@ -110,11 +118,9 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
     companion object {
         private const val FLIGHT_DAY_NAME = "Flight Day"
 
-
-        private const val ONE_DAY = 86400L
-
-
-
+        /**
+         * Make a "Day Over" event
+         */
         fun dayOver(name: String, date: LocalDate) = RouteDayEvent(
             name,
             date.startInstant(),
@@ -148,16 +154,20 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
 
             // println("DEBUG - $date - INPUT IS $input")
             return when {
-                input matches leaveRegex        -> LeaveEvent(constructorData)
                 input matches checkInRegex      -> CheckinEvent(constructorData)
                 input matches checkOutRegex     -> CheckOutEvent(constructorData)
+                input matches clickRegex        -> ClickEvent(constructorData)
+                input matches flightRegex       -> FlightEvent(constructorData)
+                input matches hotelRegex        -> HotelEvent(constructorData)
+                input matches leaveRegex        -> LeaveEvent(constructorData)
+                input matches dayOverRegex      -> RouteDayEvent(constructorData)
+                input matches simRegex          -> SimEvent(constructorData)
                 input matches trainingRegex     -> TrainingEvent(constructorData)
                 input matches standbyRegex      -> StandbyEvent(constructorData)
-                input matches flightRegex       -> FlightEvent(constructorData)
-                input matches clickRegex        -> ClickEvent(constructorData)
-                input matches hotelRegex        -> HotelEvent(constructorData)
+
+
                 input matches pickupRegex       -> PickupEvent(constructorData)
-                input matches dayOverRegex      -> RouteDayEvent(constructorData)
+
 
                 else -> null.also { println("No event found in $input") }
             }

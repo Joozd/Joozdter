@@ -14,9 +14,12 @@ class HotelEvent(name: String,
                  startTime: Instant?,
                  endTime: Instant?,
                  info: String = "",
-                 notes: String = ""
-): Event(name, EventTypes.HOTEL, startTime, endTime, info, notes), CompleteableEvent{
-    internal constructor(constructorData: EventConstructorData) : this(constructorData.name(), null, null, constructorData.hotelInfo())
+                 notes: String = "",
+                 id: Long? = null
+): Event(name, EventTypes.HOTEL, startTime, endTime, info, notes, id), CompleteableEvent{
+    internal constructor(constructorData: EventConstructorData) :
+            this(constructorData.name(), null, null, constructorData.hotelInfo())
+    internal constructor(e: Event): this (e.name, e.startTime, e.endTime, e.info, e.notes, e.id)
 
     override fun completeTimes(today: Day, nextDay: Day?): Event {
         val startTime: Instant = today.getLastTypedEvent(eventsBeforeHotel)?.endTime
@@ -37,7 +40,7 @@ class HotelEvent(name: String,
                       id: Long?
     ): HotelEvent{
         require (type == this.type) { "Cannot copy a typed Event to another type"}
-        return HotelEvent(name, startTime, endTime, info, notes)
+        return HotelEvent(name, startTime, endTime, info, notes, id)
     }
 
     companion object{

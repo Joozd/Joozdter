@@ -6,14 +6,12 @@ import nl.joozd.joozdter.data.events.*
 import nl.joozd.joozdter.data.events.getEventsThatNeedCompleting
 import nl.joozd.joozdter.utils.extensions.replaceValue
 import java.time.*
-import java.time.format.DateTimeFormatter
 
 /**
  * A Day holds all events for that day
  * It also has a static function [Day.of] that does a lot of work generating all those events from a string.
  * @param date: Date of this [Day]
  * @param events: All events of this day
- * @param legend: Legend for the used abbreviations in this day (not all have to be used, its the legend for the entire roster)
  */
 class Day(val date: LocalDate, val events: List<Event>){
     /**
@@ -41,6 +39,7 @@ class Day(val date: LocalDate, val events: List<Event>){
      * replace a CompleteableEvent by its version with completed times
      */
     private fun MutableList<Event>.updateTimesForEvent(event: CompleteableEvent, nextDay: Day?){
+        require (event is Event){ "event must be an Event"}
         this.replaceValue(event, event.completeTimes(this@Day, nextDay))
     }
 
@@ -209,7 +208,7 @@ class Day(val date: LocalDate, val events: List<Event>){
         /**
          * returns a day if it is an empty day or a day over. Throws an error on malformed data
          */
-        fun parseEmptyDayIfAble(dayLines: List<String>, period: InstantRange): Day? {
+        private fun parseEmptyDayIfAble(dayLines: List<String>, period: InstantRange): Day? {
             require(dayLines.isNotEmpty()) { "Cannot parse empty text into a Day"}
             if (dayLines.size == 4) return null // this is a normal day
             val date = getDate(dayLines.first(), period)
@@ -223,8 +222,5 @@ class Day(val date: LocalDate, val events: List<Event>){
                 else -> error("Day.of(): Malformed [dayLines] does not have 1, 2 or 4 lines: $dayLines")
             }
         }
-
-        // private val timeFormatter = DateTimeFormatter.ofPattern("HHmm")
-
     }
 }

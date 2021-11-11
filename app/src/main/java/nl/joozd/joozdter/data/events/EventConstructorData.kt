@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter
  * Class for passing constructor data to Event's constructor
  * Holds all the functions for parsing the input to the data required for construction.
  */
-internal class EventConstructorData(private val input: String, val date: LocalDate, val legend: Map<String, String>, ){
+internal class EventConstructorData(private val input: String, val date: LocalDate, private val legend: Map<String, String>, ){
     // If checking all regexes happens to be too slow, I could make a function to only do the work
     // for the required type but I think we're good.
     private val hotelResults = hotelRegex.find(input)?.groupValues
@@ -23,6 +23,7 @@ internal class EventConstructorData(private val input: String, val date: LocalDa
     private val flightResults = flightRegex.find(input)?.groupValues
     private val clickResults = clickRegex.find(input)?.groupValues
     private val pickupResults = pickupRegex.find(input)?.groupValues
+    private val simResults = simRegex.find(input)?.groupValues
 
 
     /**
@@ -110,10 +111,28 @@ internal class EventConstructorData(private val input: String, val date: LocalDa
         clickResults!![2].timeStringToInstant(date)
 
     /**
-     * Start time for  PickupEvent
+     * Start time for  [PickupEvent]
      */
     fun pickupTimeStart() =
         pickupResults!![1].timeStringToInstant(date)
+
+    /**
+     * start of [SimEvent]
+     */
+    fun simTimeStart() =
+        simResults!![2].timeStringToInstant(date)
+
+    /**
+     * End of [SimEvent]
+     */
+    fun simTimeEnd() =
+        simResults!![3].timeStringToInstant(date)
+
+    /**
+     * Info for sim. Might be parsed further.
+     */
+    fun simInfo() =
+        simResults!![1]
 
 
     /**

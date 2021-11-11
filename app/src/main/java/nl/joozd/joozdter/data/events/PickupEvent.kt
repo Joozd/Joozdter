@@ -8,10 +8,12 @@ class PickupEvent(name: String,
                   startTime: Instant,
                   endTime: Instant?,
                   info: String = "",
-                  notes: String = ""
-): Event(name, EventTypes.PICK_UP, startTime, endTime, info, notes), CompleteableEvent{
+                  notes: String = "",
+                  id: Long? = null
+): Event(name, EventTypes.PICK_UP, startTime, endTime, info, notes, id), CompleteableEvent{
     internal constructor(d: EventConstructorData) :
             this(d.name(), d.pickupTimeStart(), null)
+    internal constructor(e: Event): this (e.name, e.startTime!!, e.endTime, e.info, e.notes, e.id)
 
     override fun completeTimes(today: Day, nextDay: Day?): Event {
         val endTime: Instant = today.getFirstTypedEvent(eventsAfterPickup)?.startTime
@@ -32,7 +34,7 @@ class PickupEvent(name: String,
     ): PickupEvent{
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         require (startTime != null) { "a PickupEvent must have a start time"}
-        return PickupEvent(name, startTime, endTime, info, notes)
+        return PickupEvent(name, startTime, endTime, info, notes, id)
     }
 
     companion object{

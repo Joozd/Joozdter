@@ -7,8 +7,10 @@ class FlightEvent(name: String,
                   startTime: Instant?,
                   endTime: Instant?,
                   info: String = "",
-                  notes: String = ""
-): Event(name, EventTypes.FLIGHT, startTime, endTime, info, notes){
+                  notes: String = "",
+                  id: Long? = null
+): Event(name, EventTypes.FLIGHT, startTime, endTime, info, notes, id){
     internal constructor(d: EventConstructorData):
             this(d.flightName(), d.flightTimeStart(), d.flightTimeEnd(), info = d.flightInfo())
+    internal constructor(e: Event): this (e.name, e.startTime, e.endTime, e.info, e.notes, e.id)
 }

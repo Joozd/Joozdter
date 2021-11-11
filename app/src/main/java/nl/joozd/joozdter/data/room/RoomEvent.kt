@@ -14,8 +14,8 @@ data class RoomEvent(
     @PrimaryKey val id: Long,
                 val name: String,
                 val type: Int,       // EventType.value
-                val startTime: Long?, // Instant.epochSecond; no Events without times in DB
-                val endTime: Long?,   // Instant.epochSecond; no Events without times in DB
+                val startTime: Long, // Instant.epochSecond; no Events without times in DB
+                val endTime: Long,   // Instant.epochSecond; no Events without times in DB
                 val info: String,
                 val notes: String)
 {
@@ -25,9 +25,10 @@ data class RoomEvent(
     fun toEvent(): Event = Event(
         name,
         EventTypes.of(type),
-        startTime?.let { Instant.ofEpochSecond(it)},
-        endTime?.let { Instant.ofEpochSecond(it)},
+        Instant.ofEpochSecond(startTime),
+        Instant.ofEpochSecond(endTime),
         info,
-        notes
+        notes,
+        id
     ).withTypeInstance()
 }
