@@ -1,7 +1,11 @@
-package nl.joozd.joozdter.data.events
+package nl.joozd.joozdter.data.events.actualEvents
 
 import nl.joozd.joozdter.data.Day
 import nl.joozd.joozdter.data.EventTypes
+import nl.joozd.joozdter.data.events.CompleteableEvent
+import nl.joozd.joozdter.data.events.Event
+import nl.joozd.joozdter.data.events.EventConstructorData
+import nl.joozd.joozdter.data.events.getFirstTypedEvent
 import java.time.Instant
 
 class PickupEvent(name: String,
@@ -10,7 +14,7 @@ class PickupEvent(name: String,
                   info: String = "",
                   notes: String = "",
                   id: Long? = null
-): Event(name, EventTypes.PICK_UP, startTime, endTime, info, notes, id), CompleteableEvent{
+): Event(name, EventTypes.PICK_UP, startTime, endTime, info, notes, id), CompleteableEvent {
     internal constructor(d: EventConstructorData) :
             this(d.name(), d.pickupTimeStart(), null)
     internal constructor(e: Event): this (e.name, e.startTime!!, e.endTime, e.info, e.notes, e.id)
@@ -31,7 +35,7 @@ class PickupEvent(name: String,
                       info: String,
                       notes: String,
                       id: Long?
-    ): PickupEvent{
+    ): PickupEvent {
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         require (startTime != null) { "a PickupEvent must have a start time"}
         return PickupEvent(name, startTime, endTime, info, notes, id)

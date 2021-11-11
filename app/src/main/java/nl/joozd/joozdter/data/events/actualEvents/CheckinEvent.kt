@@ -1,7 +1,10 @@
-package nl.joozd.joozdter.data.events
+package nl.joozd.joozdter.data.events.actualEvents
 
 import nl.joozd.joozdter.data.Day
 import nl.joozd.joozdter.data.EventTypes
+import nl.joozd.joozdter.data.events.*
+import nl.joozd.joozdter.data.events.EventConstructorData
+import nl.joozd.joozdter.data.events.getFirstEventAfter
 import java.time.Instant
 
 class CheckinEvent(name: String,
@@ -10,7 +13,7 @@ class CheckinEvent(name: String,
                    info: String = "",
                    notes: String = "",
                    id: Long? = null
-): Event(name, EventTypes.CHECK_IN, startTime, endTime, info, notes, id), CompleteableEvent{
+): Event(name, EventTypes.CHECK_IN, startTime, endTime, info, notes, id), CompleteableEvent, MainEvent {
     internal constructor(d: EventConstructorData) :
             this(d.name(), d.checkInTimeStart(), null)
     internal constructor(e: Event): this (e.name, e.startTime!!, e.endTime, e.info, e.notes, e.id)
@@ -32,7 +35,7 @@ class CheckinEvent(name: String,
                       endTime: Instant?,
                       info: String,
                       notes: String,
-                      id: Long?): CheckinEvent{
+                      id: Long?): CheckinEvent {
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         require (startTime != null) { "a CheckinEvent must have a start time"}
         return CheckinEvent(name, startTime, endTime, info, notes, id)

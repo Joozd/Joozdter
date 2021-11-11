@@ -1,7 +1,11 @@
-package nl.joozd.joozdter.data.events
+package nl.joozd.joozdter.data.events.actualEvents
 
 import nl.joozd.joozdter.data.Day
 import nl.joozd.joozdter.data.EventTypes
+import nl.joozd.joozdter.data.events.CompleteableEvent
+import nl.joozd.joozdter.data.events.Event
+import nl.joozd.joozdter.data.events.EventConstructorData
+import nl.joozd.joozdter.data.events.getLastEventBefore
 import java.time.Instant
 
 class CheckOutEvent(name: String,
@@ -10,7 +14,7 @@ class CheckOutEvent(name: String,
                     info: String = "",
                     notes: String = "",
                     id: Long? = null
-): Event(name, EventTypes.CHECK_OUT, startTime, endTime, info, notes, id), CompleteableEvent{
+): Event(name, EventTypes.CHECK_OUT, startTime, endTime, info, notes, id), CompleteableEvent {
     internal constructor(d: EventConstructorData) :
             this(d.name(), null, d.checkOutTimeEnd())
     internal constructor(e: Event): this (e.name, e.startTime, e.endTime!!, e.info, e.notes, e.id)
@@ -32,7 +36,7 @@ class CheckOutEvent(name: String,
                       info: String,
                       notes: String,
                       id: Long?
-    ): CheckOutEvent{
+    ): CheckOutEvent {
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         require (endTime != null) { "a CheckOutEvent must have an end time"}
         return CheckOutEvent(name, startTime, endTime, info, notes, id)

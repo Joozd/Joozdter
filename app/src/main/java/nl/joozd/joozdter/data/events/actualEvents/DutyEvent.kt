@@ -1,6 +1,8 @@
-package nl.joozd.joozdter.data.events
+package nl.joozd.joozdter.data.events.actualEvents
 
 import nl.joozd.joozdter.data.EventTypes
+import nl.joozd.joozdter.data.events.Event
+import nl.joozd.joozdter.data.events.MainEvent
 import java.time.Instant
 
 class DutyEvent(name: String,

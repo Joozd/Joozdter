@@ -1,11 +1,14 @@
-package nl.joozd.joozdter.data.events
+package nl.joozd.joozdter.data.events.actualEvents
 
 import nl.joozd.joozdter.data.Day
 import nl.joozd.joozdter.data.EventTypes
+import nl.joozd.joozdter.data.events.CompleteableEvent
+import nl.joozd.joozdter.data.events.Event
+import nl.joozd.joozdter.data.events.EventConstructorData
+import nl.joozd.joozdter.data.events.getLastTypedEvent
 import nl.joozd.joozdter.utils.extensions.endInstant
 import nl.joozd.joozdter.utils.extensions.startInstant
 import java.time.Instant
-import java.time.LocalDate
 
 /**
  * a HOTEL Event
@@ -16,7 +19,7 @@ class HotelEvent(name: String,
                  info: String = "",
                  notes: String = "",
                  id: Long? = null
-): Event(name, EventTypes.HOTEL, startTime, endTime, info, notes, id), CompleteableEvent{
+): Event(name, EventTypes.HOTEL, startTime, endTime, info, notes, id), CompleteableEvent {
     internal constructor(constructorData: EventConstructorData) :
             this(constructorData.name(), null, null, constructorData.hotelInfo())
     internal constructor(e: Event): this (e.name, e.startTime, e.endTime, e.info, e.notes, e.id)
@@ -38,7 +41,7 @@ class HotelEvent(name: String,
                       info: String,
                       notes: String,
                       id: Long?
-    ): HotelEvent{
+    ): HotelEvent {
         require (type == this.type) { "Cannot copy a typed Event to another type"}
         return HotelEvent(name, startTime, endTime, info, notes, id)
     }
