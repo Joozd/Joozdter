@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import com.itextpdf.text.pdf.PdfReader
 import com.itextpdf.text.pdf.parser.PdfTextExtractor
+import com.itextpdf.text.pdf.parser.SimpleTextExtractionStrategy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.FileNotFoundException
@@ -34,7 +35,7 @@ class PdfGrabber(val context: Context, val uri: Uri){
         if (!isValid) null
         else inputStream()?.use{ stream ->
             val reader = PdfReader(stream)
-            (1..reader.numberOfPages).map { PdfTextExtractor.getTextFromPage(reader, it)}
+            (1..reader.numberOfPages).map { PdfTextExtractor.getTextFromPage(reader, it, SimpleTextExtractionStrategy()) }
         }
     }
 

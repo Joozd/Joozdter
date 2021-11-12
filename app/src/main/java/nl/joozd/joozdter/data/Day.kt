@@ -3,6 +3,8 @@ package nl.joozd.joozdter.data
 import nl.joozd.joozdter.utils.InstantRange
 import nl.joozd.joozdter.data.EventTypes.*
 import nl.joozd.joozdter.data.events.*
+import nl.joozd.joozdter.data.events.actualEvents.CheckOutEvent
+import nl.joozd.joozdter.data.events.actualEvents.CheckinEvent
 import nl.joozd.joozdter.data.events.getEventsThatNeedCompleting
 import nl.joozd.joozdter.utils.extensions.replaceValue
 import java.time.*
@@ -31,6 +33,24 @@ class Day(val date: LocalDate, val events: List<Event>){
      * Get the start time of the first event of this day
      */
     fun startOfDay(): Instant = getFirstEvent()?.startTime ?: standardStartTime()
+
+    /**
+     * Get only events that are not yet in [knownEvents]
+     */
+    fun relevantEvents(knownEvents: Collection<Event>): List<Event> =
+        events.filter { it !in knownEvents }
+
+    /**
+     * Return all events from [knownEvents] that are made obsolete by the data in this Day
+     */
+    fun getObsoleteEvents(knownEvents: Collection<Event>) =
+        knownEvents.filter { it.date() == date }
+            .filter {it !in events}
+
+
+
+
+
 
     override fun toString(): String = "Day: $date\nEvents:\n${events.joinToString("\n")}"
 
@@ -199,10 +219,10 @@ class Day(val date: LocalDate, val events: List<Event>){
         }
 
         /**
-         * Return all [DUTY], [CHECK_IN], [TRAINING], [STANDBY] and [LEAVE] events
+         * Return all events that implement [MainEvent]
          */
         private fun getMainEvents(events: List<Event>): List<Event>{
-            return events.filter {it.type in listOf(DUTY, CHECK_IN, TRAINING, STANDBY)}
+            return events.filter { it is MainEvent }
         }
 
         /**

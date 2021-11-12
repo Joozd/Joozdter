@@ -17,6 +17,7 @@ import nl.joozd.joozdter.workers.JoozdterWorkersHub
 import nl.joozd.klcrosterparser.KlcRosterParser
 import java.io.FileNotFoundException
 
+@Deprecated("use New")
 class PdfParserActivityViewModel: JoozdterViewModel() {
     private val calendarHandler = CalendarHandler(context)
     private val initializationMutex = Mutex()

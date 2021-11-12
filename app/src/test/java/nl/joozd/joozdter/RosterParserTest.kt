@@ -20,12 +20,10 @@ class RosterParserTest {
     @Test
     fun canParseFile(){
         println("canParseFile()")
-        val pages = PdfGrabber("j3").read()
+        val pages = PdfGrabber("j4").read()
         assert(pages.isNotEmpty())
 
-        val days = RosterParser(pages).parse()?.let{
-            it.map{d -> d.completeTimes(it)}
-        }
+        val days = RosterParser(pages).parse()
 
         println(days?.joinToString("\n***\n"))
 

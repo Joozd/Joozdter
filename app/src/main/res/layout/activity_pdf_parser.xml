@@ -5,7 +5,7 @@
         android:id="@+id/backgroundLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".ui.pdfParserActivity.PdfParserActivity">
+        tools:context=".ui.pdfParserActivity.JoozdterPdfParserActivity">
 
     <TextView
             android:id="@+id/countDownCounter"

@@ -1,6 +1,7 @@
 package nl.joozd.joozdter.data.events
 
 import nl.joozd.joozdter.data.EventTypes
+import nl.joozd.joozdter.data.events.actualEvents.*
 import nl.joozd.joozdter.data.room.RoomEvent
 import nl.joozd.joozdter.utils.extensions.endInstant
 import nl.joozd.joozdter.utils.extensions.startInstant
@@ -20,11 +21,11 @@ import java.time.ZoneOffset
  * @param id: this Events ID in calendar, null if not inserted in calendar.
  */
 open class Event(val name: String, val type: EventTypes, val startTime: Instant?, val endTime: Instant?, val info: String = "", val notes: String = "", val id: Long? = null) {
-    val startEpochSecond: Long? get() = startTime?.epochSecond
-    val endEpochSecond: Long? get() = startTime?.epochSecond
+    val startEpochMilli: Long? get() = startTime?.toEpochMilli()
+    val endEpochMilli: Long? get() = endTime?.toEpochMilli()
 
 
-    override fun toString(): String = "name: $name\ntype: $type\nstart: $startTime\nend: $endTime\ninfo: $info\nnotes:$notes\n"
+    override fun toString(): String = "name: $name\ntype: $type\nstart: $startTime\nend: $endTime\ninfo: $info\nnotes:$notes\nid: $id\n"
 
     /**
      * Works like copy in a data class

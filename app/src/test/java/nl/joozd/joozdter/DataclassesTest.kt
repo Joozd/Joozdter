@@ -2,6 +2,10 @@ package nl.joozd.joozdter
 
 import nl.joozd.joozdter.data.EventTypes
 import nl.joozd.joozdter.data.events.*
+import nl.joozd.joozdter.data.events.actualEvents.CheckOutEvent
+import nl.joozd.joozdter.data.events.actualEvents.CheckinEvent
+import nl.joozd.joozdter.data.events.actualEvents.HotelEvent
+import nl.joozd.joozdter.data.events.actualEvents.PickupEvent
 import nl.joozd.joozdter.parser.RosterParser
 import org.junit.Test
 import java.time.Instant

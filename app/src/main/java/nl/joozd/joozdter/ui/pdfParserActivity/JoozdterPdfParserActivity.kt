@@ -17,8 +17,8 @@ import nl.joozd.joozdter.ui.mainActivity.MainActivity
 import nl.joozd.joozdter.ui.utils.FeedbackEvents.PdfParserActivityEvents
 import nl.joozd.joozdter.ui.utils.JoozdterActivity
 
-class PdfParserActivity : JoozdterActivity() {
-    private val viewModel: PdfParserActivityViewModel by viewModels()
+class JoozdterPdfParserActivity : JoozdterActivity() {
+    private val viewModel: PdfParserActivityViewModelNew by viewModels()
     private var mDialogShown: AlertDialog? = null // needs to be dismissed or dialog will be leaked
 
     private var bigNumberAnimator: ValueAnimator? = null
@@ -33,30 +33,17 @@ class PdfParserActivity : JoozdterActivity() {
         ActivityPdfParserBinding.inflate(layoutInflater).apply {
 
             //check if permissions are OK, ask if they aren't:
-            while (ContextCompat.checkSelfPermission(activity, Manifest.permission.WRITE_CALENDAR)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                ActivityCompat.requestPermissions(
-                    activity,
-                    arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR),
-                    0
-                )
+            while (!checkCalendarWritePermission()) {
+                ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR),0)
             }
+            if (checkCalendarWritePermission())
+                viewModel.parseIntent(intent)
+
 
             /**
              * OnClickisteners
              */
             closePdfParserActivityButton.setOnClickListener { finish() }
-
-            /**
-             * Observers
-             */
-
-            // Wait for calendarWorker to be ready in viewModel, then parse the file given through [intent]
-            viewModel.calendarWorkerReady.observe(activity) {
-                if(savedInstanceState?.getBoolean(RECREATING_TAG) == null)
-                    viewModel.parseIntent(intent)
-            }
 
             viewModel.fileReceived.observe(activity){
                 progressTextView.text = getString(R.string.receivedFile)
@@ -83,6 +70,10 @@ class PdfParserActivity : JoozdterActivity() {
             setContentView(root)
         }
     }
+
+    private fun checkCalendarWritePermission() =
+        (ContextCompat.checkSelfPermission(activity, Manifest.permission.WRITE_CALENDAR)
+                == PackageManager.PERMISSION_GRANTED)
 
     private fun ActivityPdfParserBinding.updateBigNumber(number: Int){
         countDownCounter.text = when(number) {
@@ -132,7 +123,6 @@ class PdfParserActivity : JoozdterActivity() {
 
     companion object{
         private const val BIG_NUMBER_SCALE_FACTOR = 2.0f
-        private const val RECREATING_TAG = "RECREATING_TAG"
     }
 }
 

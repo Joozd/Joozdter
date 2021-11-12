@@ -4,10 +4,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.joozd.joozdter.App
 import nl.joozd.joozdter.data.events.Event
-import nl.joozd.joozdter.data.helpers.EventsMap
 import nl.joozd.joozdter.data.room.EventDao
 import nl.joozd.joozdter.data.room.EventsDatabase
 import nl.joozd.joozdter.data.room.RoomEvent
+import nl.joozd.joozdter.data.utils.eventsToDays
 import nl.joozd.joozdter.utils.extensions.endEpochSecond
 import nl.joozd.joozdter.utils.extensions.startEpochSecond
 import java.time.LocalDate
@@ -42,11 +42,11 @@ class Repository private constructor(private val eventDao: EventDao) {
     }
 
     /**
-     * Puts a list of [Event] into Days
+     * Save events to DB
      */
-    private fun eventsToDays(events: List<Event>): List<Day>{
-        val eventsMap = EventsMap(events)
-        return eventsMap.days()
+    suspend fun saveEvents(events: List<Event>){
+        val roomEventsArray = events.map{it.toRoomEvent()}.toTypedArray()
+        eventDao.insertEvents(*roomEventsArray)
     }
 
     /**

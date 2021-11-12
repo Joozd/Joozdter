@@ -6,7 +6,7 @@
         android:id="@+id/mainActivityLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".ui.pdfParserActivity.PdfParserActivity">
+        tools:context=".ui.pdfParserActivity.JoozdterPdfParserActivity">
 
     <ScrollView
             android:id="@+id/scrollView"

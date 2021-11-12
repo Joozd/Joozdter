@@ -15,6 +15,15 @@ class InstantRange(override val start: Instant, override val endInclusive: Insta
 
     override fun toString() = "InstantRange ($start .. $endInclusive"
 
+    /**
+     * Start of this InstantRange object in epochMillis as a String (for use in DB)
+     */
+    fun startMillisString() = start.toEpochMilli().toString()
+
+    /**
+     * End of this InstantRange object in epochMillis as a String (for use in DB)
+     */
+    fun endMillisString() = start.toEpochMilli().toString()
 
 
     private class DateIterator(val startDate: LocalDate,

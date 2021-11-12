@@ -16,7 +16,7 @@
             android:supportsRtl="true"
             android:theme="@style/JoozdterTheme"
             tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".ui.pdfParserActivity.PdfParserActivity" android:excludeFromRecents="true"
+        <activity android:name=".ui.pdfParserActivity.JoozdterPdfParserActivity" android:excludeFromRecents="true"
                 android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

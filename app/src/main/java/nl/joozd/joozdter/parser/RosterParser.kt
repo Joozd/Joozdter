@@ -6,6 +6,7 @@ import nl.joozd.joozdter.data.Day
 import nl.joozd.joozdter.data.extensions.replaceWithValue
 import nl.joozd.joozdter.data.extensions.splitByRegex
 import nl.joozd.joozdter.data.extensions.words
+import nl.joozd.joozdter.data.utils.fixTimes
 import nl.joozd.joozdter.utils.InstantRange
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -15,7 +16,6 @@ import java.util.*
 /**
  * Parse a KLC Roster.
  * All dates and times in UTC!
- * NOTE: [context] and [uri] can not be null, unless a parsed roster is injected through [parsedPdf]
  */
 class RosterParser(private val parsedPdf: List<String>) {
     /**
@@ -34,32 +34,62 @@ class RosterParser(private val parsedPdf: List<String>) {
 
 
     /**
+     * Check if this seems to be a valid roster
+     * It checks this by looking for key data in text, if that is here, it marks this as a correct
+     * roster which can probably be parsed.
+     * Can be fooled, but that will probably not happen unintentionally.
+     */
+    fun checkIfValid(): Boolean{
+        val pages = parsedPdf.takeIf { it.isNotEmpty() } ?: return false
+        pages.getPeriod() ?: return false
+        getRosterString(pages)?: return false
+        pages.getDayStringsString()?: return false
+        return true
+    }
+
+    /**
      * Parse this roster into Days
      */
     fun parse(): List<Day>?{
         // If no pages found, no roster will be parsed
         val pages = parsedPdf.takeIf { it.isNotEmpty() } ?: return null
+        //println("ROSTERPARSER: Got ${pages.size} pages")
 
         // If no period found in this pdf, no roster will be parsed.
         val rosterPeriod: InstantRange = pages.getPeriod() ?: return null
+        //println("ROSTERPARSER: period = ${rosterPeriod.startDate} - ${rosterPeriod.endDate}")
 
         val rosterString = getRosterString(pages)?: return null
-        val dayContentStrings = rosterString.splitByRegex(dayRegEx, true).filter{ it.isNotBlank() }
+        //println("ROSTERPARSER: Got rosterString:\n\n$rosterString\n-o0o-\n\n")
 
+        val dayContentStrings = getDayContentStrings(rosterString)
+        //println("ROSTERPARSER: Got ${dayContentStrings.size} dayContentStrings")
+        //println("ROSTERPARSER: they are:\n${dayContentStrings.joinToString("\n")}")
 
         //If no dayStrings box on top of any page, no roster will be parsed
         val dayStrings = pages.extractDayStrings()?: return null
+        //println("ROSTERPARSER: Got ${dayStrings.size} dayStrings")
 
         //println(dayStrings.joinToString("\n.....\n"))
         //println(dayContentStrings.joinToString("\n.....\n"))
 
         val legend = pages.buildLegend()
 
-        return dayContentStrings.mapNotNull {
-            dayStrings.firstOrNull { ds -> it.startsWith(ds.lines().first()) }
-                ?.let { ds -> Day.of(ds, it, legend, rosterPeriod) }
-        }
+        val unfinishedDays = buildDays(dayContentStrings, dayStrings, legend, rosterPeriod)
+        //println("ROSTERPARSER: Got ${unfinishedDays.size} unfinishedDays")
 
+        return unfinishedDays.fixTimes()
+
+    }
+
+    private fun buildDays(
+        dayContentStrings: List<String>,
+        dayStrings: List<String>,
+        legend: Map<String, String>,
+        rosterPeriod: InstantRange
+    ) = dayContentStrings.mapNotNull {
+        dayStrings.firstOrNull { ds -> it.startsWith(ds.lines().first()) }
+            ?.let { ds -> Day.of(ds, it, legend, rosterPeriod) }
     }
 
     /**
@@ -212,7 +242,7 @@ class RosterParser(private val parsedPdf: List<String>) {
         /**
          * Create a RosterParser object from a Uri
          */
-        suspend fun ofUri(context: Context, uri: Uri): RosterParser? = PdfGrabber(context, uri).getText()?.let { RosterParser(it) }
+        suspend fun ofUri(uri: Uri, context: Context): RosterParser? = PdfGrabber(context, uri).getText()?.let { RosterParser(it) }
 
 
         // This line is the beginning of roster info. It is on all pages with a roster on it, and not on pages without.
