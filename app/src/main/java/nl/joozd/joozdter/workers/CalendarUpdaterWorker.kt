@@ -23,6 +23,7 @@ import java.time.Instant
  * This will do the whole calendar-related part of the "adding roster to calendar" thing.
  * expects InputData with an uri to a KLC roster
  */
+@Deprecated("Use [UpdateWorker]")
 class CalendarUpdaterWorker(appContext: Context, workerParams: WorkerParameters):
     CoroutineWorker(appContext, workerParams) {
 
