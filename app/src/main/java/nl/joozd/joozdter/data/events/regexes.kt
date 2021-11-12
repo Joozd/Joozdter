@@ -16,7 +16,7 @@ internal val dayOverRegex = """X""".toRegex()
 
 //results: [0] = whole line, [1] = flightnumber, [2] = orig, [3] = tOut, [4] = tIn, [5] = dest, [6] = extra info
 internal val flightRegex =
-    """((?:KL|WA)\s?\d{2,5})\s([A-Z]{3})\s($TIME)\s($TIME)\s([A-Z]{3})(.*)""".toRegex()
+    """((?:DH/)?(?:KL|WA)\s?\d{2,5})\s(?:R\s)?([A-Z]{3})\s($TIME)\s($TIME)\s([A-Z]{3})(.*)""".toRegex()
 
 internal val hotelRegex = """(H\d+)\s([A-Z]{3})""".toRegex()
 internal val clickRegex = """CLICK\s[A-Z]{3}\s($TIME)\s($TIME)""".toRegex()
