@@ -16,7 +16,7 @@ class PickupEvent(name: String,
                   id: Long? = null
 ): Event(name, EventTypes.PICK_UP, startTime, endTime, info, notes, id), CompleteableEvent {
     internal constructor(d: EventConstructorData) :
-            this(d.name(), d.pickupTimeStart(), null)
+            this(FIXED_NAME, d.pickupTimeStart(), null)
     internal constructor(e: Event): this (e.name, e.startTime!!, e.endTime, e.info, e.notes, e.id)
 
     override fun completeTimes(today: Day, nextDay: Day?): Event {
@@ -43,6 +43,9 @@ class PickupEvent(name: String,
 
     companion object{
         private val eventsAfterPickup = listOf(EventTypes.DUTY, EventTypes.CHECK_IN)
+
+        private const val FIXED_NAME = "Pick Up"
         private const val STANDARD_DURATION = 60*30L // seconds (30 minutes)
+
     }
 }
