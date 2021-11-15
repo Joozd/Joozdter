@@ -1,6 +1,5 @@
 package nl.joozd.joozdter.ui.mainActivity
 
-import android.content.Context
 import android.content.SharedPreferences
 import androidx.lifecycle.*
 import kotlinx.coroutines.launch
@@ -9,6 +8,7 @@ import nl.joozd.joozdter.calendar.CalendarDescriptor
 import nl.joozd.joozdter.calendar.CalendarHandler
 import nl.joozd.joozdter.data.JoozdterPrefs
 import nl.joozd.joozdter.ui.utils.JoozdterViewModel
+import nl.joozd.joozdter.workers.JoozdterWorkersHub
 
 class MainActivityViewModel: JoozdterViewModel() {
     /**
@@ -102,16 +102,6 @@ class MainActivityViewModel: JoozdterViewModel() {
     val other: LiveData<Boolean>
         get() = _other
 
-
-    private val calendarHandler = CalendarHandler(context).apply {
-        viewModelScope.launch{
-            initialize {
-                    _foundCalendars.postValue(calendarsList)
-                    _pickedCalendar.postValue(findCalendarByName(JoozdterPrefs.pickedCalendar))
-                }
-            }
-        }
-
     private val onSharedPrefsChangedListener =  SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
             JoozdterPrefs::pickedCalendar.name -> _calendarName.value = JoozdterPrefs.pickedCalendar
@@ -132,8 +122,14 @@ class MainActivityViewModel: JoozdterViewModel() {
         JoozdterPrefs.sharedPrefs.registerOnSharedPreferenceChangeListener (onSharedPrefsChangedListener)
     }
 
+    fun fillCalendarsList() = viewModelScope.launch {
+        if (!App.instance.checkCalendarWritePermission()) return@launch
+        _foundCalendars.postValue(CalendarHandler().getCalendars())
+    }
+
     fun getCalendar(calendar: CalendarDescriptor){
         _pickedCalendar.value = calendar
         JoozdterPrefs.pickedCalendar = calendar.name
+        JoozdterWorkersHub.changeCalendar(calendar)
     }
 }

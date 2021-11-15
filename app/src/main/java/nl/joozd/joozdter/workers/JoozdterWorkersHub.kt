@@ -1,11 +1,9 @@
 package nl.joozd.joozdter.workers
 
 import android.net.Uri
-import android.os.Parcel
 import androidx.work.*
 import nl.joozd.joozdter.App
 import nl.joozd.joozdter.calendar.CalendarDescriptor
-import java.time.Instant
 
 /**
  * Repository for starting workers.
@@ -28,9 +26,9 @@ object JoozdterWorkersHub {
      * This means all it's known Events will be removed from that calendar
      * and then the known-events DB will be cleared.
      */
-    fun invalidateCalendar(calendarToInvalidate: CalendarDescriptor){
-        val data = putCalendarInData(calendarToInvalidate)
-        val task = buildCalendarInvalidatorWorkerTask(data)
+    fun changeCalendar(newCalendar: CalendarDescriptor){
+        val data = putCalendarInData(newCalendar)
+        val task = buildCalendarMoverWorker(data)
         enqueTask(task)
     }
 
@@ -45,8 +43,8 @@ object JoozdterWorkersHub {
         enqueTask(task)
     }
 
-    private fun buildCalendarInvalidatorWorkerTask(data: Data) =
-        OneTimeWorkRequestBuilder<CalendarInvalidatorWorker>()
+    private fun buildCalendarMoverWorker(data: Data) =
+        OneTimeWorkRequestBuilder<CalendarMoverWorker>()
             .addTag(UPDATE_CALENDAR_TAG)
             .setInputData(data)
             .build()

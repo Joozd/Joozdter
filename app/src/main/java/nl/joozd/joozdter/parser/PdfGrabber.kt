@@ -24,7 +24,7 @@ class PdfGrabber(val context: Context, val uri: Uri){
     /**
      * Checks if this is actually an URI that holds a PDF
      */
-    val isValid = context.contentResolver.getType(uri) == PDF_MIME_TYPE
+    private fun isValid() = context.contentResolver.getType(uri) == PDF_MIME_TYPE
 
     /**
      * read the text from this URI
@@ -32,7 +32,7 @@ class PdfGrabber(val context: Context, val uri: Uri){
      */
     @Suppress("BlockingMethodInNonBlockingContext") // running on Dispatchers.IO so is OK
     suspend fun getText(): List<String>? = withContext(Dispatchers.IO){
-        if (!isValid) null
+        if (!isValid()) null
         else inputStream()?.use{ stream ->
             val reader = PdfReader(stream)
             (1..reader.numberOfPages).map { PdfTextExtractor.getTextFromPage(reader, it, SimpleTextExtractionStrategy()) }

@@ -32,6 +32,8 @@ object JoozdterPrefs {
             apply()
         }
 
+    var pickerCalendarID: Long by SharedPrefsHelper(sharedPrefs, -1) // -1 means nothing picked
+
     var leave: Boolean by SharedPrefsHelper(sharedPrefs,true)
 
 
@@ -55,6 +57,8 @@ object JoozdterPrefs {
     var other: Boolean by SharedPrefsHelper(sharedPrefs,true)
 
     var preferedLayout: Int by SharedPrefsHelper(sharedPrefs,0)
+
+    var wipeNeeded: Boolean by SharedPrefsHelper(sharedPrefs, false)
 
     private fun checkVersion() = version == CURRENTVERSION
 

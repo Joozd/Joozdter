@@ -3,7 +3,6 @@ package nl.joozd.joozdter.workers
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.work.CoroutineWorker
@@ -11,8 +10,9 @@ import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import nl.joozd.joozdter.calendar.CalendarHandlerNew
+import nl.joozd.joozdter.calendar.CalendarHandler
 import nl.joozd.joozdter.data.Day
+import nl.joozd.joozdter.data.JoozdterPrefs
 import nl.joozd.joozdter.data.Repository
 import nl.joozd.joozdter.data.events.Event
 import nl.joozd.joozdter.data.utils.eventsToDays
@@ -20,6 +20,7 @@ import nl.joozd.joozdter.parser.RosterParser
 import nl.joozd.joozdter.utils.InstantRange
 import nl.joozd.joozdter.utils.extensions.endInstant
 import nl.joozd.joozdter.utils.extensions.startInstant
+import nl.joozd.joozdter.workers.JoozdterWorkersHub.URI_TAG
 
 /**
  * This updateWorker assumes uri has been checked before sending it here.
@@ -27,29 +28,44 @@ import nl.joozd.joozdter.utils.extensions.startInstant
  */
 class UpdateWorker(appContext: Context, workerParams: WorkerParameters):
     CoroutineWorker(appContext, workerParams) {
-    private val calendarHandler = CalendarHandlerNew()
+    private val calendarHandler = CalendarHandler()
+    private val repository get() = Repository.getInstance()
 
 
     override suspend fun doWork(): Result {
-        val parser = RosterParser.ofUri(getUri(), applicationContext)   ?: return Result.failure()
-        val days = parser.parse()                                       ?: return Result.failure()
-        return if (!checkCalendarWritePermission())
-                Result.failure()
-        else {
-            //TODO Remove this if nuking is not needed!
-            removeLegacyEventsFromDays(days)
-            processDays(days)
-            Result.success()
-        }
+        val parser = RosterParser.ofUri(getUri(), applicationContext) ?: return Result.failure()
+        val days = parser.parse() ?: return Result.failure()
+        if (!checkCalendarWritePermission())
+            return Result.failure()
+
+        //if (wipeAllDataNeeded())
+            wipeAllData()
+
+        removeLegacyEventsFromDays(days) // this has a nukeCalendar() call that should be commented out
+        //processDays(days)
+        return Result.success()
     }
+
+
 
     @RequiresPermission(android.Manifest.permission.WRITE_CALENDAR)
     private suspend fun removeLegacyEventsFromDays(days: Collection<Day>){
         val dateRange = makeDateRange(days) ?: error("cannot nuke, dateRange is null")
 
         // Nuking is only for when things went wrong during testing
-        // calendarHandler.nukeCalendar(dateRange)
+        calendarHandler.nukeCalendar(dateRange)
+        //calendarHandler.showCalendar(dateRange)
         calendarHandler.removeLegacyEvents(dateRange)
+    }
+
+    private fun wipeAllDataNeeded() = JoozdterPrefs.wipeNeeded
+
+    @RequiresPermission(android.Manifest.permission.WRITE_CALENDAR)
+    private suspend fun wipeAllData(){
+        val allEvents = repository.allEvents()
+        removeEventsFromCalendar(allEvents)
+        repository.wipe()
+
     }
 
     private fun makeDateRange(days: Collection<Day>): InstantRange?{
@@ -58,22 +74,22 @@ class UpdateWorker(appContext: Context, workerParams: WorkerParameters):
         return (InstantRange(start..end))
     }
 
+
     @RequiresPermission(android.Manifest.permission.WRITE_CALENDAR)
     private suspend fun processDays(days: List<Day>): Result{
         var currentlyInCalendar = getDaysFromDisk().getEvents()
-
-        Log.d(this::class.simpleName,"Currently in calendar: ${currentlyInCalendar.size} items")
-
+        //Log.d(this::class.simpleName,"Currently in calendar: ${currentlyInCalendar.size} items")
         val eventsToRemove = days.getEventsToRemove(currentlyInCalendar)
         removeEventsFromCalendar(eventsToRemove)
+        removeEventsFromRepository(eventsToRemove)
+
         currentlyInCalendar = currentlyInCalendar.filter {it !in eventsToRemove}
         val daysToSave = saveDaysToCalendar(days, currentlyInCalendar)
-
-        Log.d(this::class.simpleName,"saved ${daysToSave.size} days:")
-
         saveEventsToDatabase(daysToSave)
+        //Log.d(this::class.simpleName,"saved ${daysToSave.size} days:")
         return Result.success()
     }
+
 
     private fun checkCalendarWritePermission(): Boolean {
         val result = ActivityCompat.checkSelfPermission(
@@ -81,6 +97,10 @@ class UpdateWorker(appContext: Context, workerParams: WorkerParameters):
             android.Manifest.permission.WRITE_CALENDAR
         )
         return result == PackageManager.PERMISSION_GRANTED
+    }
+
+    private suspend fun removeEventsFromRepository(eventsToRemove: Collection<Event>){
+        repository.removeEvents(eventsToRemove)
     }
 
 
@@ -134,5 +154,5 @@ class UpdateWorker(appContext: Context, workerParams: WorkerParameters):
         Repository.getInstance().allDays()
 
     private fun getUri() =
-        Uri.parse(inputData.getString(CalendarUpdaterWorker.URI_TAG)) ?: error ("bad uri")
+        Uri.parse(inputData.getString(URI_TAG)) ?: error ("bad uri")
 }

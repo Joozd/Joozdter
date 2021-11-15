@@ -13,7 +13,7 @@ class InstantRange(override val start: Instant, override val endInclusive: Insta
     val datesAsInstants: List<Instant>
         get() = dates.map{it.atStartOfDay().toInstant(ZoneOffset.UTC)}
 
-    override fun toString() = "InstantRange ($start .. $endInclusive"
+    override fun toString() = "InstantRange ($start .. $endInclusive)"
 
     /**
      * Start of this InstantRange object in epochMillis as a String (for use in DB)

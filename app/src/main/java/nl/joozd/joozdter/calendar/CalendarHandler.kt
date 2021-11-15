@@ -1,157 +1,281 @@
 package nl.joozd.joozdter.calendar
 
 import android.Manifest
-import android.content.*
-import android.content.pm.PackageManager
+import android.content.ContentUris
+import android.content.ContentValues
+import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.provider.CalendarContract
-import androidx.core.content.ContextCompat
-import kotlinx.coroutines.*
-import nl.joozd.joozdter.model.Event
+import android.util.Log
+import androidx.annotation.RequiresPermission
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import nl.joozd.joozdter.App
+import nl.joozd.joozdter.data.EventTypes
 import nl.joozd.joozdter.data.JoozdterPrefs
+import nl.joozd.joozdter.data.events.AllDayevent
+import nl.joozd.joozdter.data.events.Event
+import nl.joozd.joozdter.exceptions.NoCalendarSelectedException
 import nl.joozd.joozdter.utils.InstantRange
-import nl.joozd.klcrosterparser.Activities
-import java.time.*
-import java.time.temporal.ChronoUnit
+import nl.joozd.joozdter.utils.extensions.addNotNull
+import java.time.Instant
 
-/**
- * CalendarHandler will take care of handling things in devices calendar.
- * @param context: context to get contentResolver from
- */
-class CalendarHandler(private val context: Context) {
-    private val _calendarsList: MutableList<CalendarDescriptor> = mutableListOf()
-    val calendarsList: List<CalendarDescriptor>
-        get() = _calendarsList
-    var activeCalendar: CalendarDescriptor? = null
-        private set
+class CalendarHandler {
+    private val context: Context get() = App.instance
 
-    fun interface OnInit {
-        fun init()
+    private var cachedCalendars: List<CalendarDescriptor>? = null
+    private var cachedActiveCalendar: CalendarDescriptor? = null
+
+    /**
+     * Returns a list of calendars on this device
+     * Caches them as well.
+     */
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    suspend fun getCalendarsFromDisk(): List<CalendarDescriptor> = withContext(Dispatchers.IO) {
+        getCalendarDescriptors().also{
+            cachedCalendars = it
+        }
     }
 
-    /*
-    interface Observer<T> {
-        /**
-         * Called when the data is changed.
-         * @param t  The new data
-         */
-        fun onChanged(t: T)
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    suspend fun getCalendars() = cachedCalendars ?: getCalendarsFromDisk()
+
+    private val activeCalendarMutex = Mutex()
+    /**
+     * Get the active calendar, or null if not found
+     */
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    suspend fun activeCalendar(): CalendarDescriptor? = activeCalendarMutex.withLock {
+        cachedActiveCalendar
+            ?: getCalendars().singleOrNull { it.name == JoozdterPrefs.pickedCalendar }
+                ?.also{ cachedActiveCalendar = it }
     }
 
+    /**
+     * Insert events into [activeCalendar]
+     * returns list of Events with updated IDs
+     * Will throw a [NoCalendarSelectedException] if no active calendar present
+     */
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    suspend fun insertEvents(eventsList: Collection<Event>): List<Event?> = withContext(Dispatchers.IO){
+        val calendar = activeCalendar() ?: throw(NoCalendarSelectedException("No calendar selected"))
+
+        println("CalendarHandlerNew.insertEvents()")
+        println("calendar: $calendar")
+        println("received ${eventsList.size} events to save")
+
+        eventsList.map{ event ->
+            val insertedID = insertEventAndReturnEventID(event, calendar)
+            event.copy(id = insertedID)
+        }
+    }
+
+
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    suspend fun moveEventsToNewCalendar(events: Collection<Event>, newCalendarID: Long){
+        events.forEach{ event ->
+            putEventInNewCalendar(event, newCalendarID)
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    private suspend fun putEventInNewCalendar(event: Event, calID: Long){
+        val updateUri = makeUriForEvent(event)
+        val values = makeValuesForNewCalendar(calID)
+        println("Changing event ${event.id}...")
+        println("found in calendar as ${getEventByID(event.id!!)}")
+        context.contentResolver.update(updateUri, values, null, null).let{
+            println("changed $it lines")
+        }
+    }
+
+
+    private fun makeUriForEvent(event: Event) =
+        ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, event.id!!)
+
+    private fun makeValuesForNewCalendar(calID: Long) = ContentValues().apply {
+            // The new title for the event
+            put(CalendarContract.Events.CALENDAR_ID, calID)
+        }
+
+    /**
+     * Insert [event] into [calendar]
+     * @return the ID of the event after being inserted (it can be found back by this ID afterwards)
+     */
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    private fun insertEventAndReturnEventID(
+        event: Event,
+        calendar: CalendarDescriptor
+    ) = insertEventIntoCalendar(event, calendar)?.lastPathSegment?.toLong()
+
+    /**
+     * Insert [event] into [calendar]
+     * @return the URI of the event being inserted
+     */
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    private fun insertEventIntoCalendar( event: Event, calendar: CalendarDescriptor): Uri? =
+        context.contentResolver.insert(
+            CalendarContract.Events.CONTENT_URI,
+            makeContentValuesForEvent(event, calendar.calID))
+
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    suspend fun deleteEvents(eventsToDelete: Collection<Event>) {
+        eventsToDelete.forEach { event ->
+            event.id?.let { eventID ->
+                deleteEventByID(eventID)
+            }
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    suspend fun deleteEventByID(id: Long) = withContext(Dispatchers.IO){
+        val deleteUri: Uri =
+            ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, id)
+        context.contentResolver.delete(deleteUri, null, null).let{
+            Log.d("CalendarHandler", "deleted $it rows")
+        }
+    }
+
+
+    /**
+     * DO NOT USE THIS UNLESS REALLY SURE A CALENDAR CAN BE NUKED
+     *
      */
 
-    private var _onInit: OnInit? = null
-    var initialized=false
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    suspend fun nukeCalendar(range: InstantRange) {
+        println("NUKING CALENDAR ${activeCalendar()} FOR PERIOD $range")
+        oldGetEventIDSInRange(range).forEach{
+            println("NUKING $it")
+            deleteEventByID(it)
+        }
+    }
 
-    suspend fun initialize() = withContext(Dispatchers.IO) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED
-        ) return@withContext
-        val uri: Uri = CalendarContract.Calendars.CONTENT_URI
-        context.contentResolver.query(uri, CALENDAR_PROJECTION, null, null, null)?.use { cur ->
-            while (cur.moveToNext()) {
-                // Get the field values
-                val calID: Long = cur.getLong(PROJECTION_ID_INDEX)
-                val displayName: String = cur.getString(PROJECTION_DISPLAY_NAME_INDEX)
-                val accountName: String = cur.getString(PROJECTION_ACCOUNT_NAME_INDEX)
-                val ownerName: String = cur.getString(PROJECTION_OWNER_ACCOUNT_INDEX)
-                val name: String = cur.getString(PROJECTION_NAME_INDEX)
-                val color: Int = cur.getInt(PROJECTION_CALENDAR_COLOR)
-                _calendarsList.add(
-                    CalendarDescriptor(
-                        calID,
-                        displayName,
-                        accountName,
-                        ownerName,
-                        name,
-                        color
-                    )
-                ) //, name))
-                _onInit?.init()
-                initialized = true
+
+
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    suspend fun showCalendar(range: InstantRange, knownEvents: Collection<Event>? = null) {
+        println("showCalendar started")
+        val ids = getAllIDStartingInRange(range)
+        println("found ${ids.size} events in range ${range.startDate} .. ${range.endDate}")
+
+        ids.forEach{
+            println("FOUND: ")
+            println(getEventByID(it))
+            if (knownEvents != null) {
+                println("EXPECTED: ")
+                println(knownEvents.firstOrNull { e -> e.id == it })
             }
-        } ?: error { "ERROR HTP GRGR" }
-        setActiveCalendar(JoozdterPrefs.pickedCalendar)
+            println("-o0o-\n\n")
+        }
     }
 
 
-    suspend fun initialize(onInit: OnInit){
-        _onInit = onInit
-        initialize()
+
+
+    /**
+     * Remove Joozdter Legacy Events from calendar
+     */
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    suspend fun removeLegacyEvents(range: InstantRange) {
+        getLegacyIDsStartingInRange(range).forEach{ idOfLegacyEvent ->
+            deleteEventByID(idOfLegacyEvent)
+        }
     }
 
-    fun findCalendarByName(name: String?): CalendarDescriptor? = if (name == null) null else calendarsList.singleOrNull{it.name == name}
+    /**
+     * This function is only used in nuking entire blocks of Calendar Events.
+     */
 
-    fun setActiveCalendar(name: String?): Boolean = findCalendarByName(name)?.let{
-        activeCalendar = it
-        true
-    } ?: false
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    private suspend fun getAllIDStartingInRange(range: InstantRange): List<Long> = withContext(Dispatchers.IO){
+        val foundEvents: MutableList<Long> = mutableListOf()
 
-    /*
-    fun getEventsTouching(dateInstant: Instant): List<Event> {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) return emptyList()
-        val foundEvents: MutableList<Event> = mutableListOf()
-
-        activeCalendar?.let {
-            val uri: Uri = CalendarContract.Events.CONTENT_URI
-            val selection: String = "((${CalendarContract.Events.CALENDAR_ID} = ?) AND (" +
-                    "${CalendarContract.Events.DTEND} > ?) AND (" +
-                    "${CalendarContract.Events.DTSTART} < ?))"
-            val selectionArgs: Array<String> = arrayOf(
-                activeCalendar!!.calID.toString(),
-                dateInstant.toEpochMilli().toString(),
-                dateInstant.plus(
-                    1,
-                    ChronoUnit.DAYS
-                ).toEpochMilli().toString()
-            )
-            val cur: Cursor? = context.contentResolver.query(
-                uri,
-                EVENT_PROJECTION,
-                selection,
-                selectionArgs,
-                null
-            )
-            while (cur?.moveToNext() == true) {
-                if (cur.getLong(EVENT_CALENDAR_ID_INDEX) == it.calID){
-                    foundEvents.add(
-                        Event(
-                            cur.getString(EVENT_TITLE_INDEX),
-                            cur.getString(EVENT_TITLE_INDEX),
-                            Instant.ofEpochMilli(cur.getLong(EVENT_DTSTART_INDEX)),
-                            Instant.ofEpochMilli(cur.getLong(EVENT_DTEND_INDEX)),
-                            cur.getString(EVENT_EVENT_LOCATION_INDEX),
-                            "",
-                            cur.getLong(EVENT_ID_INDEX)
-                        )
-                    )
+        activeCalendar()?.let { calendar ->
+            buildEventsCursorWithInstantRange(calendar, range)?.use { cur ->
+                while (cur.moveToNext()) {
+                    if (cur.getInt(CalendarHandlerIndices.EVENT_DELETED_INDEX) == 0)
+                        foundEvents.add(cur.getLong(CalendarHandlerIndices.EVENT_ID_INDEX) )
                 }
             }
-            cur?.close()
+        } ?: error ("No active calendar x")
+        foundEvents
+    }
+
+    /**
+     * Get an event from calendar by ID
+     */
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    private suspend fun getEventByID(id: Long): Event? = withContext(Dispatchers.IO){
+        val foundEvents: MutableList<Event> = mutableListOf()
+        buildEventsByIDCursor(id)?.use { cur ->
+                while (cur.moveToNext()) {
+                    foundEvents.addNotNull(cur.buildEvent())
+                }
+        } ?: return@withContext null
+        println("Found ${foundEvents.size} events (should be 1)")
+        foundEvents.firstOrNull()
+    }
+
+
+    private suspend fun getCalendarDescriptors(): List<CalendarDescriptor>{
+        val results = ArrayList<CalendarDescriptor>()
+        buildCalendarCursor()?.use { cur ->
+            while (cur.moveToNext()) {
+                results.add(cur.getCalendarDescriptor())
+            }
         }
-        return foundEvents
+        return results
+    }
+
+    private fun makeContentValuesForEvent(event: Event, calendarID: Long): ContentValues =
+        ContentValues().apply {
+            put(CalendarContract.Events.DTSTART, event.startEpochMilli)
+            put(CalendarContract.Events.DTEND, event.endEpochMilli)
+            put(CalendarContract.Events.TITLE, event.name)
+            put(CalendarContract.Events.DESCRIPTION, event.notes)
+            put(CalendarContract.Events.CALENDAR_ID, calendarID)
+            put(CalendarContract.Events.EVENT_TIMEZONE, "UTC")
+            put(CalendarContract.Events.EVENT_LOCATION, event.info)
+            if (event is AllDayevent) put(
+                CalendarContract.Events.ALL_DAY,
+                1
+            )
+        }
+
+    /*
+    TODO figure out why this doesn't work
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    private suspend fun getLegacyIDsStartingInRange(range: InstantRange): List<Long> = withContext(Dispatchers.IO) {
+        val foundEvents: MutableList<Long> = mutableListOf()
+        activeCalendar()?.let { calendar ->
+            buildEventsCursorWithInstantRange(calendar, range)?.use { cur ->
+                while (cur.moveToNext()) {
+                    foundEvents.addNotNull(cur.getIdFromLegacyEventInActiveCalendar(calendar))
+                }
+            }
+        } ?: error ("No active calendar x")
+        foundEvents
     }
     */
 
     /**
-     * Will return a list of all [Event]s starting in [range]
-     * @param range The range in which events should start to be returned by this function
-     * Returns null if no permission to read calendar
+     * Get IDs of all events starting in [range] that have [LEGACY_IDENTIFIER] in their description
      */
-    fun getEventsStartingInRange(range: InstantRange): List<Event>?{
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) return null
-        val foundEvents: MutableList<Event> = mutableListOf()
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    private suspend fun getLegacyIDsStartingInRange(range: InstantRange): List<Long> = withContext(Dispatchers.IO) {
+        val foundEvents: MutableList<Long> = mutableListOf()
 
-        activeCalendar?.let {
+        activeCalendar()?.let { cal ->
             val uri: Uri = CalendarContract.Events.CONTENT_URI
             val selection: String = "((${CalendarContract.Events.CALENDAR_ID} = ?) AND (" +
                     "${CalendarContract.Events.DTSTART} >= ?) AND (" +
                     "${CalendarContract.Events.DTSTART} < ?))"
             val selectionArgs: Array<String> = arrayOf(
-                activeCalendar!!.calID.toString(),
+                cal.calID.toString(),
                 range.start.toEpochMilli().toString(),
                 range.endInclusive.toEpochMilli().toString()
             )
@@ -163,170 +287,135 @@ class CalendarHandler(private val context: Context) {
                 null
             )?.use { cur ->
                 while (cur.moveToNext()) {
-                    if (cur.getLong(EVENT_CALENDAR_ID_INDEX) == it.calID
-                    && IDENTIFIER in cur.getString(EVENT_DESCRIPTION_INDEX)
-                    && cur.getInt(EVENT_DELETED_INDEX) == 0)
-                    {
-                        foundEvents.add(Event(cur.getString(EVENT_TITLE_INDEX),
-                            cur.getString(EVENT_TITLE_INDEX),
-                            Instant.ofEpochMilli(cur.getLong(EVENT_DTSTART_INDEX)),
-                            Instant.ofEpochMilli(cur.getLong(EVENT_DTEND_INDEX)),
-                            cur.getString(EVENT_EVENT_LOCATION_INDEX),
-                            "",
-                            cur.getLong(EVENT_ID_INDEX)))
-                    }
-                }
-            }
-        }
-        return foundEvents
-    }
-
-
-    fun getEventsStartingOn(dateInstant: Instant): List<Event> {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) return emptyList()
-        val foundEvents: MutableList<Event> = mutableListOf()
-
-        activeCalendar?.let {
-            val uri: Uri = CalendarContract.Events.CONTENT_URI
-            val selection: String = "((${CalendarContract.Events.CALENDAR_ID} = ?) AND (" +
-                    "${CalendarContract.Events.DTSTART} >= ?) AND (" +
-                    "${CalendarContract.Events.DTSTART} < ?))"
-            val selectionArgs: Array<String> = arrayOf(
-                activeCalendar!!.calID.toString(),
-                dateInstant.toEpochMilli().toString(),
-                dateInstant.plus(
-                    1,
-                    ChronoUnit.DAYS
-                ).toEpochMilli().toString()
-            )
-            val cur: Cursor? = context.contentResolver.query(
-                uri,
-                EVENT_PROJECTION,
-                selection,
-                selectionArgs,
-                null
-            )
-            while (cur?.moveToNext() == true) {
-                if (cur.getLong(EVENT_CALENDAR_ID_INDEX) == it.calID &&  IDENTIFIER in cur.getString(
-                        EVENT_DESCRIPTION_INDEX
-                    ) && cur.getInt(EVENT_DELETED_INDEX) == 0){
-                    foundEvents.add(
-                        Event(
-                            cur.getString(EVENT_TITLE_INDEX),
-                            cur.getString(EVENT_TITLE_INDEX),
-                            Instant.ofEpochMilli(cur.getLong(EVENT_DTSTART_INDEX)),
-                            Instant.ofEpochMilli(cur.getLong(EVENT_DTEND_INDEX)),
-                            cur.getString(EVENT_EVENT_LOCATION_INDEX),
-                            "",
-                            cur.getLong(EVENT_ID_INDEX)
-                        )
-                    )
-                }
-            }
-            cur?.close()
-        }
-        return foundEvents
-    }
-
-    /* fun getEventsEndingOn(dateInstant: Instant): List<Event> {
-        val foundEvents: MutableList<Event> = mutableListOf()
-
-        activeCalendar?.let {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-                != PackageManager.PERMISSION_GRANTED) return emptyList()
-            val uri: Uri = CalendarContract.Events.CONTENT_URI
-            val selection: String = "((${CalendarContract.Events.CALENDAR_ID} = ?) AND (" +
-                    "${CalendarContract.Events.DTEND} > ?) AND (" +
-                    "${CalendarContract.Events.DTEND} < ?))"
-            val selectionArgs: Array<String> = arrayOf(
-                activeCalendar!!.calID.toString(),
-                dateInstant.toEpochMilli().toString(),
-                dateInstant.plus(
-                    1,
-                    ChronoUnit.DAYS
-                ).toEpochMilli().toString()
-            )
-            context.contentResolver.query(uri, EVENT_PROJECTION, selection, selectionArgs, null)?.use { cur ->
-                while (cur.moveToNext()) {
-                    if (cur.getLong(EVENT_CALENDAR_ID_INDEX) == it.calID && IDENTIFIER in cur.getString(
-                            EVENT_DESCRIPTION_INDEX
-                        )
+                    if (LEGACY_IDENTIFIER in cur.getString(CalendarHandlerIndices.EVENT_DESCRIPTION_INDEX)
+                        && cur.getInt(CalendarHandlerIndices.EVENT_DELETED_INDEX) == 0
                     ) {
-                        foundEvents.add(
-                            Event(
-                                cur.getString(EVENT_TITLE_INDEX),
-                                cur.getString(EVENT_TITLE_INDEX),
-                                Instant.ofEpochMilli(cur.getLong(EVENT_DTSTART_INDEX)),
-                                Instant.ofEpochMilli(cur.getLong(EVENT_DTEND_INDEX)),
-                                cur.getString(EVENT_EVENT_LOCATION_INDEX),
-                                "",
-                                cur.getLong(EVENT_ID_INDEX)
-                            )
-                        )
+                        foundEvents.add(cur.getLong(CalendarHandlerIndices.EVENT_ID_INDEX))
                     }
                 }
             }
         }
-        return foundEvents
+        foundEvents
     }
-    */
 
-    suspend fun deleteEvents(eventsList: List<Event>) = withContext (Dispatchers.IO){
-        eventsList.forEach {
-            if (it._id != null) {
-                val eventID: Long = it._id
-                val deleteUri: Uri =
-                    ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventID)
-                context.contentResolver.delete(deleteUri, null, null)
+
+    /**
+     * Legacy function for debugging (this worked somewhere else)
+     */
+@RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+private suspend fun oldGetEventIDSInRange(range: InstantRange): List<Long> = withContext (Dispatchers.IO){
+    val foundEvents: MutableList<Long> = mutableListOf()
+
+    activeCalendar()?.let { calendar ->
+        val uri: Uri = CalendarContract.Events.CONTENT_URI
+        val selection: String = "((${CalendarContract.Events.CALENDAR_ID} = ?) AND (" +
+                "${CalendarContract.Events.DTSTART} >= ?) AND (" +
+                "${CalendarContract.Events.DTSTART} < ?))"
+        val selectionArgs: Array<String> = arrayOf(
+            calendar.calID.toString(),
+            range.start.toEpochMilli().toString(),
+            range.endInclusive.toEpochMilli().toString()
+        )
+        context.contentResolver.query(
+            uri,
+            EVENT_PROJECTION,
+            selection,
+            selectionArgs,
+            null
+        )?.use { cur ->
+            while (cur.moveToNext()) {
+                if (//cur.getLong(EVENT_CALENDAR_ID_INDEX) == calendar.calID
+                    cur.getInt(CalendarHandlerIndices.EVENT_DELETED_INDEX) == 0)
+                {
+                    foundEvents.add(
+                            cur.getLong(CalendarHandlerIndices.EVENT_ID_INDEX)
+                        )
+                }
             }
         }
     }
+    foundEvents
+}
 
-    suspend fun insertEvents(eventsList: List<Event>) = withContext(Dispatchers.IO){
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED) return@withContext
-        eventsList.forEach{ event ->
-            val values = ContentValues().apply {
-                put(CalendarContract.Events.DTSTART, event.startInstant)
-                put(CalendarContract.Events.DTEND, event.endInstant)
-                put(CalendarContract.Events.TITLE, event.description)
-                put(
-                    CalendarContract.Events.DESCRIPTION,
-                    "${event.notes}\n\n" + IDENTIFIER
-                )
-                put(CalendarContract.Events.CALENDAR_ID, activeCalendar!!.calID)
-                put(CalendarContract.Events.EVENT_TIMEZONE, "UTC")
-                put(CalendarContract.Events.EVENT_LOCATION, event.extraData)
-                if (event.eventType == Activities.LEAVE)put(
-                    CalendarContract.Events.ALL_DAY,
-                    1
-                )
-            }
-            context.contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
-        }
+
+/**
+ * Builds a cursor for getting items from calendar in a specific range.
+ */
+private fun buildEventsCursorWithInstantRange(calendar: CalendarDescriptor, range: InstantRange)
+: Cursor?{
+    println("Building cursor for calendar $calendar and range $range")
+    val uri: Uri = CalendarContract.Events.CONTENT_URI
+    val selection: String = "((${CalendarContract.Events.CALENDAR_ID} = ?) AND (" +
+            "${CalendarContract.Events.DTSTART} >= ?) AND (" +
+            "${CalendarContract.Events.DTSTART} < ?))"
+    val selectionArgs: Array<String> = arrayOf(
+        calendar.calID.toString(),
+        range.startMillisString(),
+        range.endMillisString()
+    )
+    return context.contentResolver.query(uri,EVENT_PROJECTION,selection,selectionArgs,null)
+}
+
+    private fun buildEventsByIDCursor(id: Long): Cursor?{
+        val uri: Uri = CalendarContract.Events.CONTENT_URI
+        val selection: String = "(${CalendarContract.Events._ID} = ?)"
+        val selectionArgs: Array<String> = arrayOf(
+            id.toString()
+        )
+        return context.contentResolver.query(uri,EVENT_PROJECTION, selection, selectionArgs, null)
     }
 
-    companion object{
-        // The indices for the projection array below.
-        private const val PROJECTION_ID_INDEX: Int = 0
-        private const val PROJECTION_ACCOUNT_NAME_INDEX: Int = 1
-        private const val PROJECTION_DISPLAY_NAME_INDEX: Int = 2
-        private const val PROJECTION_OWNER_ACCOUNT_INDEX: Int = 3
-        private const val PROJECTION_NAME_INDEX: Int = 4
-        private const val PROJECTION_CALENDAR_COLOR: Int = 5
 
-        private const val EVENT_ID_INDEX: Int = 0
-        private const val EVENT_CALENDAR_ID_INDEX: Int = 1
-        private const val EVENT_TITLE_INDEX: Int = 2
-        private const val EVENT_EVENT_LOCATION_INDEX: Int = 3
-        private const val EVENT_DESCRIPTION_INDEX: Int = 4
-        private const val EVENT_DTSTART_INDEX: Int = 5
-        private const val EVENT_DTEND_INDEX: Int = 6
-        private const val EVENT_ALL_DAY_INDEX: Int = 7
-        private const val EVENT_DELETED_INDEX: Int = 8
+    private fun buildCalendarCursor(): Cursor?{
+        val uri: Uri = CalendarContract.Calendars.CONTENT_URI
+        return context.contentResolver.query(uri, CALENDAR_PROJECTION, null, null, null)
+    }
 
-        private const val IDENTIFIER = "Inserted by Joozdter"
+    /**
+     * get ID from an event if it has [LEGACY_IDENTIFIER] in it's description, else return null
+     */
+    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    private suspend fun Cursor.getIdFromLegacyEventInActiveCalendar(calendar: CalendarDescriptor)
+    : Long? = withContext(Dispatchers.IO) {
+        if (getLong(CalendarHandlerIndices.EVENT_CALENDAR_ID_INDEX) == calendar.calID
+            && LEGACY_IDENTIFIER in getString(CalendarHandlerIndices.EVENT_DESCRIPTION_INDEX)
+            && getInt(CalendarHandlerIndices.EVENT_DELETED_INDEX) == 0
+        )
+            getLong(CalendarHandlerIndices.EVENT_ID_INDEX)
+        else null
+    }
+
+    private suspend fun Cursor.getCalendarDescriptor(): CalendarDescriptor = withContext(Dispatchers.IO){
+        val calID: Long = getLong(CalendarHandlerIndices.PROJECTION_ID_INDEX)
+        val displayName: String = getString(CalendarHandlerIndices.PROJECTION_DISPLAY_NAME_INDEX)
+        val accountName: String = getString(CalendarHandlerIndices.PROJECTION_ACCOUNT_NAME_INDEX)
+        val ownerName: String = getString(CalendarHandlerIndices.PROJECTION_OWNER_ACCOUNT_INDEX)
+        val name: String = getString(CalendarHandlerIndices.PROJECTION_NAME_INDEX)
+        val color: Int = getInt(CalendarHandlerIndices.PROJECTION_CALENDAR_COLOR)
+
+        CalendarDescriptor(
+            calID,
+            displayName,
+            accountName,
+            ownerName,
+            name,
+            color)
+    }
+
+    private suspend fun Cursor.buildEvent(): Event = withContext(Dispatchers.IO) {
+        Event(getString(CalendarHandlerIndices.EVENT_TITLE_INDEX),
+        EventTypes.UNKNOWN_EVENT,
+        Instant.ofEpochMilli(getLong(CalendarHandlerIndices.EVENT_DTSTART_INDEX)),
+        Instant.ofEpochMilli(getLong(CalendarHandlerIndices.EVENT_DTEND_INDEX)),
+        getString(CalendarHandlerIndices.EVENT_EVENT_LOCATION_INDEX),
+        "CalendarID = ${getLong(CalendarHandlerIndices.EVENT_CALENDAR_ID_INDEX)}",
+        getLong(CalendarHandlerIndices.EVENT_ID_INDEX)
+        )
+    }
+
+
+    companion object {
+        private const val LEGACY_IDENTIFIER = "Inserted by Joozdter"
 
         private val CALENDAR_PROJECTION: Array<String> = arrayOf(
             CalendarContract.Calendars._ID,                     // 0
@@ -349,4 +438,6 @@ class CalendarHandler(private val context: Context) {
             CalendarContract.Events.DELETED                     // 8
         )
     }
+
+
 }

@@ -1,9 +1,6 @@
 package nl.joozd.joozdter.data.room
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import java.time.Instant
 
 @Dao
@@ -19,4 +16,10 @@ interface EventDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEvents(vararg events: RoomEvent)
+
+    @Query("DELETE FROM RoomEvent WHERE id = :id")
+    suspend fun deleteByID(vararg id: Long)
+
+    @Query("DELETE FROM RoomEvent")
+    suspend fun wipeDB()
 }

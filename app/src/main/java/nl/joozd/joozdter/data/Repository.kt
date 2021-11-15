@@ -60,8 +60,22 @@ class Repository private constructor(private val eventDao: EventDao) {
     /**
      * Get all events from Dao
      */
-    private suspend fun allEvents(): List<Event> = roomEventsToEvents(eventDao.getAll())
+    suspend fun allEvents(): List<Event> = withContext (Dispatchers.IO) {
+        roomEventsToEvents(eventDao.getAll())
+    }
 
+
+    suspend fun removeEvents(eventsToRemove: Collection<Event>){
+        if (eventsToRemove.isNotEmpty())
+            eventDao.deleteByID(*eventsToRemove.mapNotNull{it.id}.toLongArray())
+    }
+
+    /**
+     * Wipe entire DB!
+     */
+    suspend fun wipe() = withContext(Dispatchers.IO){
+        eventDao.wipeDB()
+    }
 
     /**
      * Converts a Collection of [RoomEvent] to a List of [Event]

@@ -8,13 +8,11 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.commit
 import androidx.recyclerview.widget.LinearLayoutManager
 import nl.joozd.joozdter.R
-import nl.joozd.joozdter.calendar.CalendarHandler
 import nl.joozd.joozdter.data.JoozdterPrefs
 import nl.joozd.joozdter.databinding.ActivityMainBinding
 import nl.joozd.joozdter.utils.extensions.bypassedIsChecked
@@ -75,6 +73,8 @@ class MainActivity : JoozdterActivity() {
         } else {
 
             with(ActivityMainBinding.inflate(layoutInflater)) {
+                viewModel.fillCalendarsList()
+
                 val calendarPickerAdapter = CalendarPickerAdapter(emptyList()) { viewModel.getCalendar(it) }
                 calendarPicker.layoutManager = LinearLayoutManager(activity)
                 calendarPicker.adapter = calendarPickerAdapter

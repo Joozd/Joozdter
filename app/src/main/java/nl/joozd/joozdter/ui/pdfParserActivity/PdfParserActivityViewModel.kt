@@ -10,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import nl.joozd.joozdter.calendar.CalendarHandler
+import nl.joozd.joozdter.calendar.CalendarHandlerOld
 import nl.joozd.joozdter.ui.utils.FeedbackEvents.PdfParserActivityEvents
 import nl.joozd.joozdter.ui.utils.JoozdterViewModel
 import nl.joozd.joozdter.workers.JoozdterWorkersHub
@@ -19,7 +19,7 @@ import java.io.FileNotFoundException
 
 @Deprecated("use New")
 class PdfParserActivityViewModel: JoozdterViewModel() {
-    private val calendarHandler = CalendarHandler(context)
+    private val calendarHandler = CalendarHandlerOld(context)
     private val initializationMutex = Mutex()
     private var mIntent: Intent? = null
     private val countDownMutex = Mutex()

@@ -7,7 +7,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import nl.joozd.joozdter.calendar.CalendarHandler
+import nl.joozd.joozdter.calendar.CalendarHandlerOld
 import nl.joozd.joozdter.data.extensions.toModel
 import nl.joozd.joozdter.model.extensions.addCAORest
 import nl.joozd.joozdter.model.extensions.addMaxFDP
@@ -72,7 +72,7 @@ class CalendarUpdaterWorker(appContext: Context, workerParams: WorkerParameters)
         val events = filterEvents(allEvents)
 
         //Calendarhandler takes care of inserting into and deleting from device's calendar
-        val calendarHandler = CalendarHandler(applicationContext).apply { initialize() }
+        val calendarHandler = CalendarHandlerOld(applicationContext).apply { initialize() }
 
         /**
          * Delete joozdter events overlapping with roster from calendar

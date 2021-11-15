@@ -15,6 +15,7 @@ import java.time.Duration
  * @param _id: id for keeping track of retrieved events from calendar, to be able to delete them.
  */
 
+@Deprecated("Deprecated")
 data class Event (val eventType: String, val description: String, val startTime: Instant, val endTime: Instant, val extraData: String = "", val notes: String = "", val _id: Long? = null){
     val startInstant: Long
         get() = startTime.toEpochMilli()
