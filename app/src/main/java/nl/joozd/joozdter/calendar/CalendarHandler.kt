@@ -281,7 +281,7 @@ class CalendarHandler {
             )
             context.contentResolver.query(
                 uri,
-                EVENT_PROJECTION,
+                CalendarHandlerIndices.EVENT_PROJECTION,
                 selection,
                 selectionArgs,
                 null
@@ -318,7 +318,7 @@ private suspend fun oldGetEventIDSInRange(range: InstantRange): List<Long> = wit
         )
         context.contentResolver.query(
             uri,
-            EVENT_PROJECTION,
+            CalendarHandlerIndices.EVENT_PROJECTION,
             selection,
             selectionArgs,
             null
@@ -353,7 +353,7 @@ private fun buildEventsCursorWithInstantRange(calendar: CalendarDescriptor, rang
         range.startMillisString(),
         range.endMillisString()
     )
-    return context.contentResolver.query(uri,EVENT_PROJECTION,selection,selectionArgs,null)
+    return context.contentResolver.query(uri,CalendarHandlerIndices.EVENT_PROJECTION,selection,selectionArgs,null)
 }
 
     private fun buildEventsByIDCursor(id: Long): Cursor?{
@@ -362,13 +362,13 @@ private fun buildEventsCursorWithInstantRange(calendar: CalendarDescriptor, rang
         val selectionArgs: Array<String> = arrayOf(
             id.toString()
         )
-        return context.contentResolver.query(uri,EVENT_PROJECTION, selection, selectionArgs, null)
+        return context.contentResolver.query(uri,CalendarHandlerIndices.EVENT_PROJECTION, selection, selectionArgs, null)
     }
 
 
     private fun buildCalendarCursor(): Cursor?{
         val uri: Uri = CalendarContract.Calendars.CONTENT_URI
-        return context.contentResolver.query(uri, CALENDAR_PROJECTION, null, null, null)
+        return context.contentResolver.query(uri, CalendarHandlerIndices.CALENDAR_PROJECTION, null, null, null)
     }
 
     /**
@@ -416,27 +416,6 @@ private fun buildEventsCursorWithInstantRange(calendar: CalendarDescriptor, rang
 
     companion object {
         private const val LEGACY_IDENTIFIER = "Inserted by Joozdter"
-
-        private val CALENDAR_PROJECTION: Array<String> = arrayOf(
-            CalendarContract.Calendars._ID,                     // 0
-            CalendarContract.Calendars.ACCOUNT_NAME,            // 1
-            CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,   // 2
-            CalendarContract.Calendars.OWNER_ACCOUNT,           // 3
-            CalendarContract.Calendars.NAME,                    // 4
-            CalendarContract.Calendars.CALENDAR_COLOR           // 5
-        )
-
-        private val EVENT_PROJECTION: Array<String> = arrayOf(
-            CalendarContract.Events._ID,                        // 0
-            CalendarContract.Events.CALENDAR_ID,                // 1
-            CalendarContract.Events.TITLE,                      // 2
-            CalendarContract.Events.EVENT_LOCATION,             // 3
-            CalendarContract.Events.DESCRIPTION,                // 4
-            CalendarContract.Events.DTSTART,                    // 5
-            CalendarContract.Events.DTEND,                      // 6
-            CalendarContract.Events.ALL_DAY,                    // 7
-            CalendarContract.Events.DELETED                     // 8
-        )
     }
 
 
