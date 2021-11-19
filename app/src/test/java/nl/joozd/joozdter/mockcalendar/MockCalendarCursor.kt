@@ -43,6 +43,20 @@ class MockCalendarCursor(private val table: MockDatabase.Table): Cursor {
     }
 
     /**
+     * For debugging / comparing cursors
+     */
+    val selectionString get() = table.selectionString
+
+    /**
+     * Equals only checks if this Cursor has the same underlying data, not the same state
+     */
+    override fun equals(other: Any?): Boolean =
+        if (other !is MockCalendarCursor) false
+        else other.table == table
+
+
+
+    /**
      * Will be empty if no data in database because it is not an actual database :)
      * If needed I can mock it of course
      */

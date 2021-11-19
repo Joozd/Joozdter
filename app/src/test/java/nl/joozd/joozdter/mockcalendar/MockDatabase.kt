@@ -3,7 +3,7 @@ package nl.joozd.joozdter.mockcalendar
 import android.net.Uri
 import android.provider.CalendarContract
 
-class MockDatabase() {
+class MockDatabase {
     private val calendarRows = ArrayList<MockCalendar>()
     private val eventRows = ArrayList<MockCalendarEvent>()
 
@@ -22,9 +22,7 @@ class MockDatabase() {
 
     }
 
-
-
-    inner class Table(uri: Uri, private val projection: Array<String>?, selection: String?, selectionArgs: Array<String>?, sortOrder: String?){
+    inner class Table(private val uri: Uri, private val projection: Array<String>?, selection: String?, selectionArgs: Array<String>?, sortOrder: String?){
         init{
             require(sortOrder == null){ "SortOrder not supported yet" }
         }
@@ -41,24 +39,49 @@ class MockDatabase() {
         val count = target.size
         val names = projection ?: target.firstOrNull()?.columnNames?.toTypedArray()
 
+        val selectionString = selection?.let { buildSelectionString( it, selectionArgs ?: emptyArray()) }
+
         operator fun get(index: Int) = target[index].getValues(projection)
+
+        override fun equals(other: Any?): Boolean =
+            if (other !is MockDatabase.Table) false
+            else other.uri == uri && other.projection.contentEquals(projection) && other.selectionString == selectionString
+
+        override fun hashCode(): Int {
+            var result = uri.hashCode()
+            result = 31 * result + (projection?.contentHashCode() ?: 0)
+            result = 31 * result + (rules?.hashCode() ?: 0)
+            result = 31 * result + target.hashCode()
+            result = 31 * result + count
+            result = 31 * result + (names?.contentHashCode() ?: 0)
+            result = 31 * result + (selectionString?.hashCode() ?: 0)
+            return result
+        }
     }
 
-    /**
+
+
+
+        /**
      * Returns a bunch of rules. Rules that have to be AND are in sublists together.
+     * Does not support parentheses  - eg. not ((A OR B) AND (C OR D))
      */
-    private fun makeSelectionRules(selection: String, selectionArgs: Array<String>): RuleSet{
+    private fun makeSelectionRules(selection: String, selectionArgs: Array<String>): RuleSet = RuleSet().apply{
         require (selection.count { it == '?'} <= selectionArgs.size) { "Not enough args for selection" }
-        var selectionWIP = selection.replace("(|)".toRegex(), " ")
+        val selectionString = buildSelectionString(selection, selectionArgs).replace("\\(|\\)".toRegex(), " ")
+
+        selectionString.split("OR").forEach{
+            addRulesCombinationFromText(it)
+        }
+    }
+
+    private fun buildSelectionString(selection: String, selectionArgs: Array<String>): String{
+        var selectionWIP = selection
         val argsWIP = selectionArgs.toMutableList()
-        val ruleSet = RuleSet()
         while ('?' in selectionWIP){
             selectionWIP = selectionWIP.replaceFirst("?", argsWIP.removeFirst())
         }
-        selectionWIP.split("OR").forEach{
-            ruleSet.addRulesCombinationFromText(it)
-        }
-        return ruleSet
+        return selectionWIP
     }
 
     private class RuleSet {
