@@ -63,15 +63,8 @@ class MainActivity : JoozdterActivity() {
                 .commit()
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR), 0
-            )
-        } else {
-
+        if (!checkReadCalendarPermission()) requestReadCalendarPermission()
+        else {
             with(ActivityMainBinding.inflate(layoutInflater)) {
                 viewModel.fillCalendarsList()
 
@@ -193,6 +186,17 @@ class MainActivity : JoozdterActivity() {
                 }
             }
         }
+    }
+
+    private fun checkReadCalendarPermission() =
+        (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR)
+                == PackageManager.PERMISSION_GRANTED)
+
+    private fun requestReadCalendarPermission() {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR), 0
+        )
     }
 
 }

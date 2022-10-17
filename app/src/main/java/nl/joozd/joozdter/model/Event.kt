@@ -1,6 +1,5 @@
 package nl.joozd.joozdter.model
 
-import nl.joozd.klcrosterparser.KlcRosterEvent
 import java.time.Instant
 import java.time.Duration
 
