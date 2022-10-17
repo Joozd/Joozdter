@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import java.lang.IllegalArgumentException
 
+@Suppress("unused")
 class MockCalendarCursor(private val table: MockDatabase.Table): Cursor {
     private var currentPos = 0
     private var open = true
@@ -99,10 +100,12 @@ class MockCalendarCursor(private val table: MockDatabase.Table): Cursor {
     override fun isNull(column: Int): Boolean =
         table[currentPos].isNull(column)
 
+    @Deprecated("yolo", ReplaceWith("error(\"Not supported)\")"))
     override fun deactivate() {
         error ("Not supported)")
     }
 
+    @Deprecated("yolo", ReplaceWith("error(\"Not supported)\")"))
     override fun requery(): Boolean {
         error ("Not supported)")
     }
@@ -186,5 +189,11 @@ class MockCalendarCursor(private val table: MockDatabase.Table): Cursor {
         columnNames[columnIndex]
 
     private fun Int.inBounds(min: Int = -1, max: Int = count) = if (this < min) min else maxOf(max, this)
+    override fun hashCode(): Int {
+        var result = table.hashCode()
+        result = 31 * result + currentPos
+        result = 31 * result + open.hashCode()
+        return result
+    }
 
 }

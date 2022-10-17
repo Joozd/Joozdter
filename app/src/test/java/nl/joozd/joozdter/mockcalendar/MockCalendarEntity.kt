@@ -15,5 +15,9 @@ abstract class MockCalendarEntity {
 
     operator fun get(key: String) = row[key]!!.trim()
 
+    operator fun set(key: String, value: String){
+        row[key] = value
+    }
+
     private fun emptyOrFail(key: String) = if (key in columnNames) "" else throw NoSuchElementException("key $key not found in $this")
 }
