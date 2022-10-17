@@ -2,26 +2,25 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 33
     defaultConfig {
         multiDexEnabled true
         applicationId "nl.joozd.joozdter"
-        minSdkVersion 17
-        targetSdkVersion 31
-        versionCode 37 // 01-08-2021
-        versionName "3.1.5" // Bugfix and cleaning up code
+        minSdkVersion 26
+        targetSdkVersion 33
+        versionCode 38 // 16-10-2022
+        versionName "3.2" // release for android 12
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
         // Flag to enable support for the new language APIs
-        coreLibraryDesugaringEnabled true
+        // coreLibraryDesugaringEnabled true
         // Sets Java compatibility to Java 8
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
     kotlinOptions {
         jvmTarget = "1.8"
-        useIR = true
     }
     testOptions {
         unitTests {
@@ -44,15 +43,16 @@ android {
     }
 
     buildFeatures {
-        viewBinding = true
+        viewBinding true
     }
+    namespace 'nl.joozd.joozdter'
 }
 
 dependencies {
 
     apply plugin: 'kotlin-kapt'
 
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    // coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.0'
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(":klcrosterparser")
@@ -63,8 +63,8 @@ dependencies {
     kapt "androidx.room:room-compiler:$room_version"
 
     //kotlin Coroutines
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4"
 
     // worker
     implementation "androidx.work:work-runtime-ktx:$work_version"
@@ -72,18 +72,18 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation "com.itextpdf:itextg:5.5.10"
 
-    implementation 'androidx.appcompat:appcompat:1.3.1'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
 
-    implementation 'androidx.core:core-ktx:1.6.0'
-    implementation 'androidx.activity:activity-ktx:1.3.1'
-    implementation 'androidx.fragment:fragment-ktx:1.3.6'
+    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.activity:activity-ktx:1.6.0'
+    implementation 'androidx.fragment:fragment-ktx:1.5.3'
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
-    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'com.google.android.material:material:1.6.1'
 
-    androidTestImplementation 'junit:junit:4.13.1'
-    testImplementation 'junit:junit:4.13.1'
+    androidTestImplementation 'junit:junit:4.13.2'
+    testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.6'
     testImplementation 'org.mockito.kotlin:mockito-kotlin:4.0.0'
 
