@@ -15,6 +15,7 @@ import nl.joozd.joozdter.App
 import nl.joozd.joozdter.calendar.CalendarRepository
 import nl.joozd.joozdter.data.sharedPrefs.JoozdterPrefs
 import nl.joozd.joozdter.data.sharedPrefs.SharedPreferenceDelegate
+import nl.joozd.joozdter.data.utils.getPickedCalendarFromList
 import nl.joozd.joozdter.ui.utils.JoozdterViewModel
 
 class MainActivityViewModel: JoozdterViewModel() {
@@ -92,7 +93,7 @@ class MainActivityViewModel: JoozdterViewModel() {
     @RequiresPermission(Manifest.permission.READ_CALENDAR)
     fun setCalendar(calendar: CalendarDescriptor, context: Context) {
         viewModelScope.launch {
-            val oldCalendar = foundCalendarsFlow.value.firstOrNull { it.displayName == JoozdterPrefs.pickedCalendar() }
+            val oldCalendar = getPickedCalendarFromList(foundCalendarsFlow.value)
             // select picked calendar
             JoozdterPrefs.pickedCalendar(calendar.displayName)
 
