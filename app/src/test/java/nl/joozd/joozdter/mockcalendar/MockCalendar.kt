@@ -1,7 +1,7 @@
 package nl.joozd.joozdter.mockcalendar
 
 import android.provider.CalendarContract
-import nl.joozd.joozdter.calendar.CalendarDescriptor
+import nl.joozd.joozdter.calendar.CalendarDescriptorOld
 
 class MockCalendar: MockCalendarEntity(){
     override val columnNames: Set<String> =
@@ -10,7 +10,7 @@ class MockCalendar: MockCalendarEntity(){
         ColumnNameSets.calendarColumns
 
     companion object{
-        fun of(calendar: CalendarDescriptor): MockCalendar = MockCalendar().apply{
+        fun of(calendar: CalendarDescriptorOld): MockCalendar = MockCalendar().apply{
             this[CalendarContract.Calendars._ID] = calendar.calID.toString()
             this[CalendarContract.Calendars.CALENDAR_DISPLAY_NAME] = calendar.displayName
             this[CalendarContract.Calendars.ACCOUNT_NAME] = calendar.accountName
