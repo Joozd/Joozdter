@@ -56,7 +56,7 @@ dependencies {
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(":klcrosterparser")
-    implementation files("C:\\Users\\joozd\\AndroidStudioProjects\\JoozdCalendarApiApplication\\JoozdCalendarApi\\build\\outputs\\aar\\JoozdCalendarApi-release.aar")
+    implementation files("C:\\Users\\joozd\\IdeaProjects\\libs\\JoozdCalendarApi-release.aar")
 
     //room
     implementation "androidx.room:room-runtime:$room_version"
