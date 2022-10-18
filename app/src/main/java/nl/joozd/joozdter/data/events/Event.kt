@@ -1,5 +1,6 @@
 package nl.joozd.joozdter.data.events
 
+import nl.joozd.joozdcalendarapi.CalendarEvent
 import nl.joozd.joozdter.data.EventTypes
 import nl.joozd.joozdter.data.events.actualEvents.*
 import nl.joozd.joozdter.data.room.RoomEvent
@@ -20,9 +21,9 @@ import java.time.ZoneOffset
  * @param notes: Notes, such as crew names, FDP info, etc.
  * @param id: this Events ID in calendar, null if not inserted in calendar.
  */
-open class Event(val name: String, val type: EventTypes, val startTime: Instant?, val endTime: Instant?, val info: String = "", val notes: String = "", val id: Long? = null) {
-    val startEpochMilli: Long? get() = startTime?.toEpochMilli()
-    val endEpochMilli: Long? get() = endTime?.toEpochMilli()
+open class Event(val name: String, val type: EventTypes, val startTime: Instant, val endTime: Instant, val info: String = "", val notes: String = "", val id: Long? = null) {
+    val startEpochMilli: Long get() = startTime.toEpochMilli()
+    val endEpochMilli: Long get() = endTime.toEpochMilli()
 
 
     override fun toString(): String = "name: $name\ntype: $type\nstart: $startTime\nend: $endTime\ninfo: $info\nnotes:$notes\nid: $id\n"
@@ -32,8 +33,8 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
      */
     open fun copy(name: String = this.name,
                   type: EventTypes = this.type,
-                  startTime: Instant? = this.startTime,
-                  endTime: Instant? = this.endTime,
+                  startTime: Instant = this.startTime,
+                  endTime: Instant = this.endTime,
                   info: String = this.info,
                   notes: String = this.notes,
                   id: Long? = this.id
@@ -44,46 +45,32 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
      * startTime and endTime should not be null as only items in calendar will be saved in RoomDB
      *  and those must have start and end time
      */
-    fun toRoomEvent(): RoomEvent {
-        require (id != null) { "Do not store events without ID in DB" }
-        require (startTime != null && endTime != null) { "startTime and endTime must not be null" }
-        return RoomEvent(
-            id,
+    fun toRoomEvent(): RoomEvent =
+        RoomEvent(
+            id = 0,
             name,
-            type.value,
             startTime.epochSecond,
             endTime.epochSecond,
-            info,
-            notes
         )
-    }
 
-    /**
-     * Sets the correct instance of this event
-     * TODO make this for all types
-     */
-    fun withTypeInstance(): Event{
-        return when(type){
-            EventTypes.CHECK_OUT -> CheckOutEvent(this)
-            EventTypes.CHECK_IN -> CheckinEvent(this)
-            EventTypes.CLICK -> ClickEvent(this)
-            EventTypes.FLIGHT -> FlightEvent(this)
-            EventTypes.HOTEL -> HotelEvent(this)
-            EventTypes.LEAVE -> LeaveEvent(this)
-            EventTypes.PICK_UP -> PickupEvent(this)
-            EventTypes.ROUTE_DAY -> RouteDayEvent(this)
-            EventTypes.SIMULATOR_DUTY -> SimEvent(this)
-            EventTypes.STANDBY -> StandbyEvent(this)
-            EventTypes.TRAINING -> TrainingEvent(this)
-            else -> this
-        }
-    }
+
+    fun toCalendarEvent(): CalendarEvent =
+        CalendarEvent(
+            calendarID = CalendarEvent.ID_NOT_SET,
+            title = name,
+            location = info,
+            description = notes,
+            startEpochMillis = startEpochMilli,
+            endEpochMillis = endEpochMilli,
+            timeZone = "UTC",
+            allDay = type == EventTypes.ROUTE_DAY
+        )
 
     /**
      * Get the date of this event.
      */
     fun date(zoneOffset: ZoneOffset = ZoneOffset.UTC): LocalDate? =
-        startTime?.toLocalDate(zoneOffset) ?: endTime?.toLocalDate(zoneOffset)
+        startTime.toLocalDate(zoneOffset) ?: endTime.toLocalDate(zoneOffset)
 
     override fun equals(other: Any?): Boolean {
         if (other !is Event) return false
@@ -98,8 +85,8 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant?
     override fun hashCode(): Int {
         var result = name.hashCode()
         result = 31 * result + type.hashCode()
-        result = 31 * result + (startTime?.hashCode() ?: 0)
-        result = 31 * result + (endTime?.hashCode() ?: 0)
+        result = 31 * result + (startTime.hashCode())
+        result = 31 * result + (endTime.hashCode())
         result = 31 * result + info.hashCode()
         result = 31 * result + notes.hashCode()
         return result

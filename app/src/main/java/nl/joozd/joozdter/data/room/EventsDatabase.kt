@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [RoomEvent::class], version = 1)
+@Database(entities = [RoomEvent::class], version = 2)
 abstract class EventsDatabase: RoomDatabase() {
     abstract fun eventDao(): EventDao
 
@@ -19,7 +19,8 @@ abstract class EventsDatabase: RoomDatabase() {
         ?: Room.databaseBuilder(context.applicationContext,
             EventsDatabase::class.java,
             "events"
-        ).build().also{
+        ).fallbackToDestructiveMigration()
+            .build().also{
             INSTANCE = it
         }
     }

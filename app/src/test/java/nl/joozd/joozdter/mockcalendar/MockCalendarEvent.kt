@@ -1,7 +1,7 @@
 package nl.joozd.joozdter.mockcalendar
 
 import android.provider.CalendarContract
-import nl.joozd.joozdter.data.events.AllDayevent
+import nl.joozd.joozdter.data.EventTypes
 import nl.joozd.joozdter.data.events.Event
 
 class MockCalendarEvent: MockCalendarEntity(){
@@ -19,7 +19,7 @@ class MockCalendarEvent: MockCalendarEntity(){
             this[CalendarContract.Events.DESCRIPTION] = event.notes
             this[CalendarContract.Events.DTSTART] = event.startEpochMilli.toString()
             this[CalendarContract.Events.DTEND] = event.endEpochMilli.toString()
-            this[CalendarContract.Events.ALL_DAY] = if (event is AllDayevent) "1" else "0"
+            this[CalendarContract.Events.ALL_DAY] = if (event.type == EventTypes.ROUTE_DAY) "1" else "0"
             this[CalendarContract.Events.DELETED] = deleted.toString()
         }
     }

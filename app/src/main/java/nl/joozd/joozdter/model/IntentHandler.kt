@@ -2,16 +2,9 @@ package nl.joozd.joozdter.model
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Parcelable
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import nl.joozd.joozdter.App
-import nl.joozd.joozdter.exceptions.BadFileTypeException
-import nl.joozd.joozdter.exceptions.NotARosterException
-import nl.joozd.joozdter.parser.RosterParser
-import nl.joozd.joozdter.workers.JoozdterWorkersHub
+import nl.joozd.joozdter.utils.extensions.getParcelableExtraUri
 import java.io.FileNotFoundException
-import java.io.InputStream
 
 class IntentHandler(intent: Intent, private val onProgressMade: OnProgressMadeListener? = null) {
     private val context get() = App.instance
@@ -30,28 +23,18 @@ class IntentHandler(intent: Intent, private val onProgressMade: OnProgressMadeLi
     }
 
 
-    /**
-     * Parse file into a roster
-     */
-    suspend fun sendFileToWorker(){
-        val parser = RosterParser.ofUri(uri, context)
-            ?:  throw (BadFileTypeException("Did not receive a valid PDF file"))
-        updateProgress(FILE_READ)
-        if (!parser.checkIfValid()) throw (NotARosterException("Unable to parse file"))
-        updateProgress(FILE_VALID)
-        JoozdterWorkersHub.processUri(uri)
-        updateProgress(ROSTER_PASSED_TO_WORKER)
-    }
-
-
     private fun Intent.getUri(): Uri? =
-        getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+        getParcelableExtraUri()
 
     /**
      * Update progress to furthest progress we made thus far
      */
     private fun updateProgress(p: Int){
         progress = minOf(progress, p)
+    }
+
+    private fun debugPrint(debugMessage: String){
+        println("IntentWorker Debug says: $debugMessage")
     }
 
 

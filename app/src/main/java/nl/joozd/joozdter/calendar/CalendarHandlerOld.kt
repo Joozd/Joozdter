@@ -1,19 +1,6 @@
 package nl.joozd.joozdter.calendar
 
-import android.Manifest
-import android.content.*
-import android.content.pm.PackageManager
-import android.database.Cursor
-import android.net.Uri
-import android.provider.CalendarContract
-import androidx.core.content.ContextCompat
-import kotlinx.coroutines.*
-import nl.joozd.joozdter.model.Event
-import nl.joozd.joozdter.data.JoozdterPrefs
-import nl.joozd.joozdter.utils.InstantRange
-import nl.joozd.klcrosterparser.Activities
-import java.time.*
-import java.time.temporal.ChronoUnit
+import android.content.Context
 
 /**
  * CalendarHandler will take care of handling things in devices calendar.
@@ -21,10 +8,11 @@ import java.time.temporal.ChronoUnit
  */
 @Deprecated("Deprecated")
 class CalendarHandlerOld(private val context: Context) {
-    private val _calendarsList: MutableList<CalendarDescriptor> = mutableListOf()
-    val calendarsList: List<CalendarDescriptor>
+    /*
+    private val _calendarsList: MutableList<CalendarDescriptorOld> = mutableListOf()
+    val calendarsList: List<CalendarDescriptorOld>
         get() = _calendarsList
-    var activeCalendar: CalendarDescriptor? = null
+    var activeCalendar: CalendarDescriptorOld? = null
         private set
 
     fun interface OnInit {
@@ -60,7 +48,7 @@ class CalendarHandlerOld(private val context: Context) {
                 val name: String = cur.getString(PROJECTION_NAME_INDEX)
                 val color: Int = cur.getInt(PROJECTION_CALENDAR_COLOR)
                 _calendarsList.add(
-                    CalendarDescriptor(
+                    CalendarDescriptorOld(
                         calID,
                         displayName,
                         accountName,
@@ -82,7 +70,7 @@ class CalendarHandlerOld(private val context: Context) {
         initialize()
     }
 
-    fun findCalendarByName(name: String?): CalendarDescriptor? = if (name == null) null else calendarsList.singleOrNull{it.name == name}
+    fun findCalendarByName(name: String?): CalendarDescriptorOld? = if (name == null) null else calendarsList.singleOrNull{it.name == name}
 
     fun setActiveCalendar(name: String?): Boolean = findCalendarByName(name)?.let{
         activeCalendar = it
@@ -350,4 +338,6 @@ class CalendarHandlerOld(private val context: Context) {
             CalendarContract.Events.DELETED                     // 8
         )
     }
+
+     */
 }

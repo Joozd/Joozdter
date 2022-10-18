@@ -7,20 +7,19 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.widget.TextViewCompat
 import nl.joozd.joozdter.R
 import nl.joozd.joozdter.databinding.ActivityPdfParserBinding
 import nl.joozd.joozdter.ui.mainActivity.MainActivity
-import nl.joozd.joozdter.ui.utils.FeedbackEvents.PdfParserActivityEvents
 import nl.joozd.joozdter.ui.utils.JoozdterActivity
+import nl.joozd.joozdter.utils.enums.Progress
 
 class JoozdterPdfParserActivity : JoozdterActivity() {
-    private val viewModel: PdfParserActivityViewModelNew by viewModels()
-    private var mDialogShown: AlertDialog? = null // needs to be dismissed or dialog will be leaked
+    private val viewModel: PdfParserActivityViewModel2 by viewModels()
 
+    //Setting this will end previous animation
     private var bigNumberAnimator: ValueAnimator? = null
         set(it){
             bigNumberAnimator?.end()
@@ -31,44 +30,54 @@ class JoozdterPdfParserActivity : JoozdterActivity() {
         super.onCreate(savedInstanceState)
 
         ActivityPdfParserBinding.inflate(layoutInflater).apply {
-
             //check if permissions are OK, ask if they aren't:
-            while (!checkCalendarWritePermission()) {
-                ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR),0)
-            }
-            if (checkCalendarWritePermission())
+            if (!checkCalendarWritePermission())
+                requestCalendarWritePermission()
+            else
                 viewModel.parseIntent(intent)
 
+            observeFlows()
 
             /**
              * OnClickisteners
              */
             closePdfParserActivityButton.setOnClickListener { finish() }
 
-            viewModel.fileReceived.observe(activity){
-                progressTextView.text = getString(R.string.receivedFile)
-            }
-
-            viewModel.seemsToBeARoster.observe(activity){
-                progressTextView.text = getString(R.string.itSeemsToBeARoster)
-            }
-
-            viewModel.progressCountDown.observe(activity){
-                updateBigNumber(it)
-            }
-
-
-            viewModel.feedbackEvent.observe(activity){
-                when (it.getEvent()){
-                    PdfParserActivityEvents.NO_VALID_CALENDAR_PICKED -> mDialogShown = showNoCalendarPickedDialog()
-                    PdfParserActivityEvents.NOT_A_KLC_ROSTER -> done("Not a valid roster", true)
-                    PdfParserActivityEvents.FILE_ERROR -> done ("Weird error FILE_ERROR. maybe try again?", true)
-                    PdfParserActivityEvents.FILE_NOT_FOUND -> done ("Weird error FILE_NOT_FOUND. maybe try again?", true)
-                    PdfParserActivityEvents.DONE -> done ("Done! Your roster should appear in your calendar shortly!", false)
-                }
-            }
             setContentView(root)
         }
+    }
+
+    private fun ActivityPdfParserBinding.observeFlows(){
+        viewModel.progressFlow.launchCollectWhileLifecycleStateStarted{
+            showProgress(it)
+        }
+        viewModel.messageFlow.launchCollectWhileLifecycleStateStarted{ message ->
+            message?.let {
+                alert(it){ viewModel.messageShown() }
+            }
+        }
+    }
+
+    private fun ActivityPdfParserBinding.showProgress(progress: Progress){
+        println("Progress: $progress")
+        updateBigNumber(when(progress){
+            Progress.STARTED -> 5
+            Progress.GOT_FILE -> 4
+            Progress.READING_FILE -> 3
+            Progress.PARSING_ROSTER -> 2
+            Progress.SAVING_ROSTER -> 1
+
+            Progress.DONE -> 0.also{ done("done", false) }
+            Progress.ERROR -> (-1).also{ errorLayout() }
+        })
+    }
+
+    private fun requestCalendarWritePermission() {
+        ActivityCompat.requestPermissions(
+            activity,
+            arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR),
+            0
+        )
     }
 
     private fun checkCalendarWritePermission() =
@@ -116,10 +125,6 @@ class JoozdterPdfParserActivity : JoozdterActivity() {
         TextViewCompat.setTextAppearance(progressTextView, R.style.statusErrorStyle)
     }
 
-    override fun onStop() {
-        mDialogShown?.dismiss()
-        super.onStop()
-    }
 
     companion object{
         private const val BIG_NUMBER_SCALE_FACTOR = 2.0f

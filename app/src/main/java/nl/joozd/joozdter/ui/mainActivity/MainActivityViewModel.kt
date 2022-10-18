@@ -10,12 +10,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import nl.joozd.joozdcalendarapi.CalendarDescriptor
 import nl.joozd.joozdter.App
 import nl.joozd.joozdter.calendar.CalendarRepository
 import nl.joozd.joozdter.data.sharedPrefs.JoozdterPrefs
 import nl.joozd.joozdter.data.sharedPrefs.SharedPreferenceDelegate
-import nl.joozd.joozdter.data.utils.getPickedCalendarFromList
 import nl.joozd.joozdter.ui.utils.JoozdterViewModel
 
 class MainActivityViewModel: JoozdterViewModel() {
@@ -90,17 +91,19 @@ class MainActivityViewModel: JoozdterViewModel() {
         else calendarRepository.updateCalendarsList()
     }
 
+    private val nukeMutex = Mutex()
     @RequiresPermission(Manifest.permission.READ_CALENDAR)
     fun setCalendar(calendar: CalendarDescriptor, context: Context) {
-        viewModelScope.launch {
-            val oldCalendar = getPickedCalendarFromList(foundCalendarsFlow.value)
-            // select picked calendar
-            JoozdterPrefs.pickedCalendar(calendar.displayName)
+        // select picked calendar
+        JoozdterPrefs.pickedCalendar(calendar.displayName)
 
-            // If allowed (should be allowed), move flights from old to new calendar.
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED)
-                calendarRepository.switchCalendars(oldCalendar, calendar)
-        }
+        // If allowed (should be allowed), move flights from old to new calendar.
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED)
+            viewModelScope.launch {
+                nukeMutex.withLock {
+                    calendarRepository.switchCalendarTo(calendar)
+                }
+            }
     }
 
     fun messageShown(){

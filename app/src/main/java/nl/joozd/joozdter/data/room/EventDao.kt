@@ -17,8 +17,8 @@ interface EventDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEvents(vararg events: RoomEvent)
 
-    @Query("DELETE FROM RoomEvent WHERE id = :id")
-    suspend fun deleteByID(vararg id: Long)
+    @Delete
+    suspend fun deleteEvents(events: List<RoomEvent>)
 
     @Query("DELETE FROM RoomEvent")
     suspend fun wipeDB()

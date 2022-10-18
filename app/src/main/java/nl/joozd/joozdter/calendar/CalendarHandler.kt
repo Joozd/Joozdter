@@ -1,40 +1,19 @@
 package nl.joozd.joozdter.calendar
 
-import android.Manifest
-import android.content.ContentUris
-import android.content.ContentValues
-import android.content.Context
-import android.database.Cursor
-import android.net.Uri
-import android.provider.CalendarContract
-import android.util.Log
-import androidx.annotation.RequiresPermission
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import nl.joozd.joozdter.App
-import nl.joozd.joozdter.data.EventTypes
-import nl.joozd.joozdter.data.JoozdterPrefs
-import nl.joozd.joozdter.data.events.AllDayevent
-import nl.joozd.joozdter.data.events.Event
-import nl.joozd.joozdter.exceptions.NoCalendarSelectedException
-import nl.joozd.joozdter.utils.InstantRange
-import nl.joozd.joozdter.utils.extensions.addNotNull
-import java.time.Instant
-
+@Deprecated("Use CalendarRepository")
 class CalendarHandler {
+    /*
     private val context: Context get() = App.instance
 
-    private var cachedCalendars: List<CalendarDescriptor>? = null
-    private var cachedActiveCalendar: CalendarDescriptor? = null
+    private var cachedCalendars: List<CalendarDescriptorOld>? = null
+    private var cachedActiveCalendar: CalendarDescriptorOld? = null
 
     /**
      * Returns a list of calendars on this device
      * Caches them as well.
      */
     @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
-    suspend fun getCalendarsFromDisk(): List<CalendarDescriptor> = withContext(Dispatchers.IO) {
+    suspend fun getCalendarsFromDisk(): List<CalendarDescriptorOld> = withContext(Dispatchers.IO) {
         getCalendarDescriptors().also{
             cachedCalendars = it
         }
@@ -48,9 +27,10 @@ class CalendarHandler {
      * Get the active calendar, or null if not found
      */
     @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
-    suspend fun activeCalendar(): CalendarDescriptor? = activeCalendarMutex.withLock {
+    suspend fun activeCalendar(): CalendarDescriptorOld? = activeCalendarMutex.withLock {
+        val pickedName = JoozdterPrefs.pickedCalendar.valueBlocking
         cachedActiveCalendar
-            ?: getCalendars().singleOrNull { it.name == JoozdterPrefs.pickedCalendar }
+            ?: getCalendars().singleOrNull { it.name == pickedName }
                 ?.also{ cachedActiveCalendar = it }
     }
 
@@ -108,7 +88,7 @@ class CalendarHandler {
     @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
     private fun insertEventAndReturnEventID(
         event: Event,
-        calendar: CalendarDescriptor
+        calendar: CalendarDescriptorOld
     ) = insertEventIntoCalendar(event, calendar)?.lastPathSegment?.toLong()
 
     /**
@@ -116,7 +96,7 @@ class CalendarHandler {
      * @return the URI of the event being inserted
      */
     @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
-    private fun insertEventIntoCalendar( event: Event, calendar: CalendarDescriptor): Uri? =
+    private fun insertEventIntoCalendar(event: Event, calendar: CalendarDescriptorOld): Uri? =
         context.contentResolver.insert(
             CalendarContract.Events.CONTENT_URI,
             makeContentValuesForEvent(event, calendar.calID))
@@ -221,8 +201,8 @@ class CalendarHandler {
     }
 
 
-    private suspend fun getCalendarDescriptors(): List<CalendarDescriptor>{
-        val results = ArrayList<CalendarDescriptor>()
+    private suspend fun getCalendarDescriptors(): List<CalendarDescriptorOld>{
+        val results = ArrayList<CalendarDescriptorOld>()
         buildCalendarCursor()?.use { cur ->
             while (cur.moveToNext()) {
                 results.add(cur.getCalendarDescriptor())
@@ -341,7 +321,7 @@ private suspend fun oldGetEventIDSInRange(range: InstantRange): List<Long> = wit
 /**
  * Builds a cursor for getting items from calendar in a specific range.
  */
-private fun buildEventsCursorWithInstantRange(calendar: CalendarDescriptor, range: InstantRange)
+private fun buildEventsCursorWithInstantRange(calendar: CalendarDescriptorOld, range: InstantRange)
 : Cursor?{
     println("Building cursor for calendar $calendar and range $range")
     val uri: Uri = CalendarContract.Events.CONTENT_URI
@@ -375,7 +355,7 @@ private fun buildEventsCursorWithInstantRange(calendar: CalendarDescriptor, rang
      * get ID from an event if it has [LEGACY_IDENTIFIER] in it's description, else return null
      */
     @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
-    private suspend fun Cursor.getIdFromLegacyEventInActiveCalendar(calendar: CalendarDescriptor)
+    private suspend fun Cursor.getIdFromLegacyEventInActiveCalendar(calendar: CalendarDescriptorOld)
     : Long? = withContext(Dispatchers.IO) {
         if (getLong(CalendarHandlerIndices.EVENT_CALENDAR_ID_INDEX) == calendar.calID
             && LEGACY_IDENTIFIER in getString(CalendarHandlerIndices.EVENT_DESCRIPTION_INDEX)
@@ -385,7 +365,7 @@ private fun buildEventsCursorWithInstantRange(calendar: CalendarDescriptor, rang
         else null
     }
 
-    private suspend fun Cursor.getCalendarDescriptor(): CalendarDescriptor = withContext(Dispatchers.IO){
+    private suspend fun Cursor.getCalendarDescriptor(): CalendarDescriptorOld = withContext(Dispatchers.IO){
         val calID: Long = getLong(CalendarHandlerIndices.PROJECTION_ID_INDEX)
         val displayName: String = getString(CalendarHandlerIndices.PROJECTION_DISPLAY_NAME_INDEX)
         val accountName: String = getString(CalendarHandlerIndices.PROJECTION_ACCOUNT_NAME_INDEX)
@@ -393,7 +373,7 @@ private fun buildEventsCursorWithInstantRange(calendar: CalendarDescriptor, rang
         val name: String = getString(CalendarHandlerIndices.PROJECTION_NAME_INDEX)
         val color: Int = getInt(CalendarHandlerIndices.PROJECTION_CALENDAR_COLOR)
 
-        CalendarDescriptor(
+        CalendarDescriptorOld(
             calID,
             displayName,
             accountName,
@@ -419,4 +399,6 @@ private fun buildEventsCursorWithInstantRange(calendar: CalendarDescriptor, rang
     }
 
 
+
+     */
 }

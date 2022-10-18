@@ -2,6 +2,7 @@ package nl.joozd.joozdter.data.room
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import nl.joozd.joozdcalendarapi.CalendarEvent
 import nl.joozd.joozdter.data.events.Event
 
 /**
@@ -18,11 +19,12 @@ import nl.joozd.joozdter.data.events.Event
  */
 @Entity
 data class RoomEvent(
-    @PrimaryKey val id: Long,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val title: String,
     val startTime: Long, // Instant.epochSecond; no Events without times in DB
     val endTime: Long,   // Instant.epochSecond; no Events without times in DB
 ){
+    constructor(event: CalendarEvent): this(0, event.title, event.startEpochMillis, event.endEpochMillis)
     // When comparing with event, use roomEvent == event, not the other way around!!!
     override fun equals(other: Any?): Boolean = when(other) {
         is RoomEvent -> title == other.title

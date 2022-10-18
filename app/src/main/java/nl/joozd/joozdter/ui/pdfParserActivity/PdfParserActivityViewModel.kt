@@ -1,24 +1,9 @@
 package nl.joozd.joozdter.ui.pdfParserActivity
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Parcelable
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import nl.joozd.joozdter.calendar.CalendarHandlerOld
-import nl.joozd.joozdter.ui.utils.FeedbackEvents.PdfParserActivityEvents
 import nl.joozd.joozdter.ui.utils.JoozdterViewModel
-import nl.joozd.joozdter.workers.JoozdterWorkersHub
-import nl.joozd.klcrosterparser.KlcRosterParser
-import java.io.FileNotFoundException
 
-@Deprecated("use New")
 class PdfParserActivityViewModel: JoozdterViewModel() {
+    /*
     private val calendarHandler = CalendarHandlerOld(context)
     private val initializationMutex = Mutex()
     private var mIntent: Intent? = null
@@ -114,4 +99,6 @@ class PdfParserActivityViewModel: JoozdterViewModel() {
             }
         }
     }
+
+     */
 }
