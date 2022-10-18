@@ -56,6 +56,7 @@ dependencies {
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(":klcrosterparser")
+    implementation files("C:\\Users\\joozd\\AndroidStudioProjects\\JoozdCalendarApiApplication\\JoozdCalendarApi\\build\\outputs\\aar\\JoozdCalendarApi-release.aar")
 
     //room
     implementation "androidx.room:room-runtime:$room_version"
@@ -68,6 +69,9 @@ dependencies {
 
     // worker
     implementation "androidx.work:work-runtime-ktx:$work_version"
+
+    //Jetpack Datastore Preferences
+    implementation "androidx.datastore:datastore-preferences:1.0.0"
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation "com.itextpdf:itextg:5.5.10"

@@ -1,22 +1,21 @@
 package nl.joozd.joozdter.ui.mainActivity
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.commit
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import kotlinx.coroutines.launch
 import nl.joozd.joozdter.R
-import nl.joozd.joozdter.data.JoozdterPrefs
+import nl.joozd.joozdter.data.sharedPrefs.JoozdterPrefs
 import nl.joozd.joozdter.databinding.ActivityMainBinding
-import nl.joozd.joozdter.utils.extensions.bypassedIsChecked
-import nl.joozd.joozdter.utils.extensions.setInterceptedOnCheckedChangedListener
 import nl.joozd.joozdter.ui.adapters.CalendarPickerAdapter
 import nl.joozd.joozdter.ui.fragments.NewUserFragment
 import nl.joozd.joozdter.ui.utils.JoozdterActivity
@@ -24,24 +23,12 @@ import nl.joozd.joozdter.ui.utils.JoozdterActivity
 class MainActivity : JoozdterActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
 
-    class ShowMenuListener(private val f: () -> Unit){
-        fun go(){
-            f()
+    @SuppressLint("MissingPermission") // since the check is not missing...
+    private val calendarPickerAdapter = CalendarPickerAdapter {
+        if(checkReadWriteCalendarPermission()) {
+            println("Setting calendar to $it")
+            viewModel.setCalendar(it, this)
         }
-    }
-    private var showHalpListener: ShowMenuListener? = null
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
-        R.id.menu_halp -> {
-            showHalpListener?.go()
-            true
-        }
-        else -> false
     }
 
     override fun onRequestPermissionsResult(requestCode : Int ,
@@ -54,143 +41,139 @@ class MainActivity : JoozdterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val newUserFragment = NewUserFragment()
-
-        showHalpListener = ShowMenuListener {
-            supportFragmentManager.beginTransaction()
-                .add(R.id.mainActivityLayout, newUserFragment)
-                .addToBackStack(null)
-                .commit()
-        }
-
-        if (!checkReadCalendarPermission()) requestReadCalendarPermission()
+        if (!checkReadWriteCalendarPermission()) requestReadCalendarPermission()
         else {
             with(ActivityMainBinding.inflate(layoutInflater)) {
                 viewModel.fillCalendarsList()
+                observeFlows()
+                setOnClickListeners()
+                initializeSpinner()
 
-                val calendarPickerAdapter = CalendarPickerAdapter(emptyList()) { viewModel.getCalendar(it) }
                 calendarPicker.layoutManager = LinearLayoutManager(activity)
                 calendarPicker.adapter = calendarPickerAdapter
-
-                /**
-                 * Observers:
-                 */
-
-                viewModel.calendarName.observe(activity){
-                    calendarPickerAdapter.pickCalendar(it)
-                }
-
-                viewModel.foundCalendars.observe(activity){
-                    calendarPickerAdapter.updateData(it)
-                }
-
-                viewModel.pickedCalendar.observe(activity){
-                    it?.let { pickedCalendarText.text = it.displayName }
-                }
-
-                //toggle switches:
-                viewModel.leave.observe(activity){
-                    daysOffswitch.bypassedIsChecked = it
-                }
-                viewModel.taxi.observe(activity){
-                    taxiSwitch.bypassedIsChecked = it
-                }
-                viewModel.checkIn.observe(activity){
-                    checkInSwitch.bypassedIsChecked = it
-                }
-                viewModel.checkOut.observe(activity){
-                    checkOutSwitch.bypassedIsChecked = it
-                }
-                viewModel.flight.observe(activity){
-                    flightsSwitch.bypassedIsChecked = it
-                }
-                viewModel.hotel.observe(activity){
-                    hotelSwitch.bypassedIsChecked = it
-                }
-                viewModel.standby.observe(activity){
-                    standbySwitch.bypassedIsChecked = it
-                }
-                viewModel.simulator.observe(activity){
-                    simBriefingSwitch.bypassedIsChecked = it
-                }
-                viewModel.actualSimulator.observe(activity){
-                    simActualSwitch.bypassedIsChecked = it
-                }
-                viewModel.other.observe(activity){
-                    otherSwitch.bypassedIsChecked = it
-                }
-
-
-
-
-                daysOffswitch.setInterceptedOnCheckedChangedListener { _, _ ->
-                    viewModel.daysOffswitchClicked()
-                }
-                hotelSwitch.setInterceptedOnCheckedChangedListener { _, _ ->
-                    viewModel.hotelSwitchClicked()
-                }
-                taxiSwitch.setInterceptedOnCheckedChangedListener { _, _ ->
-                    viewModel.taxiSwitchClicked()
-                }
-                checkInSwitch.setInterceptedOnCheckedChangedListener { _, b ->
-                    viewModel.checkInSwitchClicked()
-                    if (!b) alert("Make sure to check emailed roster for notes, as they are usually added to CheckIn activity")
-                }
-                checkOutSwitch.setInterceptedOnCheckedChangedListener { _, _ ->
-                    viewModel.checkOutSwitchClicked()
-                }
-                flightsSwitch.setInterceptedOnCheckedChangedListener { _, _ ->
-                    viewModel.flightsSwitchClicked()
-                }
-                otherSwitch.setInterceptedOnCheckedChangedListener { _, _ ->
-                    viewModel.otherSwitchClicked()
-                }
-                simBriefingSwitch.setInterceptedOnCheckedChangedListener { _, _ ->
-                    viewModel.simBriefingSwitchClicked()
-                }
-                simActualSwitch.setInterceptedOnCheckedChangedListener { _, _ ->
-                    viewModel.simActualSwitchClicked()
-                }
-                standbySwitch.setInterceptedOnCheckedChangedListener { _, _ ->
-                    viewModel.standbySwitchClicked()
-                }
-
-                preferedLayoutSpinner.onItemSelectedListener =
-                    object : AdapterView.OnItemSelectedListener {
-                        override fun onItemSelected(
-                            parent: AdapterView<*>?,
-                            view: View?,
-                            position: Int,
-                            id: Long
-                        ) {
-                            JoozdterPrefs.preferedLayout = position + 1
-                        }
-
-                        override fun onNothingSelected(parent: AdapterView<*>?) {
-                            // Do nothing
-                        }
-                    }
-                preferedLayoutSpinner.setSelection(JoozdterPrefs.preferedLayout - 1)
 
                 setContentView(root)
 
                 // show splash screen on first run
-                if (JoozdterPrefs.firstTime) {
-                    supportFragmentManager.commit{
-                        add(R.id.mainActivityLayout, newUserFragment)
-                        addToBackStack(null)
+                lifecycleScope.launch {
+                    if (JoozdterPrefs.firstTime()) {
+                        supportFragmentManager.commit {
+                            add(R.id.mainActivityLayout, NewUserFragment())
+                            addToBackStack(null)
+                        }
+                        JoozdterPrefs.firstTime(false)
+                    } else {
+                        alert(R.string.youCanClose)
                     }
-                    JoozdterPrefs.firstTime = false
-                } else {
-                    alert(R.string.youCanClose)
                 }
             }
         }
     }
 
-    private fun checkReadCalendarPermission() =
-        (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR)
-                == PackageManager.PERMISSION_GRANTED)
+    private fun ActivityMainBinding.initializeSpinner() {
+        preferedLayoutSpinner.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    JoozdterPrefs.decodeCodes(position + 1)
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    // Do nothing
+                }
+            }
+        preferedLayoutSpinner.setSelection(JoozdterPrefs.decodeCodes.valueBlocking - 1)
+    }
+
+    private fun ActivityMainBinding.setOnClickListeners() {
+        daysOffswitch.setOnClickListener {
+            viewModel.daysOffswitchClicked()
+        }
+        hotelSwitch.setOnClickListener {
+            viewModel.hotelSwitchClicked()
+        }
+        taxiSwitch.setOnClickListener {
+            viewModel.taxiSwitchClicked()
+        }
+        checkInSwitch.setOnClickListener {
+            viewModel.checkInSwitchClicked()
+        }
+        checkOutSwitch.setOnClickListener {
+            viewModel.checkOutSwitchClicked()
+        }
+        flightsSwitch.setOnClickListener {
+            viewModel.flightsSwitchClicked()
+        }
+        otherSwitch.setOnClickListener {
+            viewModel.otherSwitchClicked()
+        }
+        simBriefingSwitch.setOnClickListener {
+            viewModel.simBriefingSwitchClicked()
+        }
+        simActualSwitch.setOnClickListener {
+            viewModel.simActualSwitchClicked()
+        }
+        standbySwitch.setOnClickListener {
+            viewModel.standbySwitchClicked()
+        }
+    }
+
+
+    private fun ActivityMainBinding.observeFlows(){
+        viewModel.foundCalendarsFlow.launchCollectWhileLifecycleStateStarted{
+            println("Found calendars: $it")
+            calendarPickerAdapter.submitList(it)
+        }
+
+        viewModel.pickedCalendarFlow.launchCollectWhileLifecycleStateStarted{ cal ->
+            calendarPickerAdapter.pickCalendar(cal)
+            cal?.let { pickedCalendarText.text = it.displayName }
+        }
+
+        viewModel.messagesFlow.launchCollectWhileLifecycleStateStarted{ message ->
+            message?.let { alert(it){ viewModel.messageShown()} }
+        }
+
+        //toggle switches:
+        viewModel.leaveFlow.launchCollectWhileLifecycleStateStarted{
+            daysOffswitch.isChecked = it
+        }
+        viewModel.taxiFlow.launchCollectWhileLifecycleStateStarted{
+            taxiSwitch.isChecked = it
+        }
+        viewModel.checkInFlow.launchCollectWhileLifecycleStateStarted{
+            checkInSwitch.isChecked = it
+        }
+        viewModel.checkOutFlow.launchCollectWhileLifecycleStateStarted{
+            checkOutSwitch.isChecked = it
+        }
+        viewModel.flightFlow.launchCollectWhileLifecycleStateStarted{
+            flightsSwitch.isChecked = it
+        }
+        viewModel.hotelFlow.launchCollectWhileLifecycleStateStarted{
+            hotelSwitch.isChecked = it
+        }
+        viewModel.standbyFlow.launchCollectWhileLifecycleStateStarted{
+            standbySwitch.isChecked = it
+        }
+        viewModel.trainingFlow.launchCollectWhileLifecycleStateStarted{
+            simBriefingSwitch.isChecked = it
+        }
+        viewModel.simulatorFlow.launchCollectWhileLifecycleStateStarted{
+            simActualSwitch.isChecked = it
+        }
+        viewModel.otherDutyFlow.launchCollectWhileLifecycleStateStarted{
+            otherSwitch.isChecked = it
+        }
+    }
+
+    private fun checkReadWriteCalendarPermission() =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED
 
     private fun requestReadCalendarPermission() {
         ActivityCompat.requestPermissions(

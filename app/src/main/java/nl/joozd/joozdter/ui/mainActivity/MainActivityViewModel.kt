@@ -1,135 +1,115 @@
 package nl.joozd.joozdter.ui.mainActivity
 
-import android.content.SharedPreferences
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.annotation.RequiresPermission
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import nl.joozd.joozdcalendarapi.CalendarDescriptor
 import nl.joozd.joozdter.App
-import nl.joozd.joozdter.calendar.CalendarDescriptor
-import nl.joozd.joozdter.calendar.CalendarHandler
-import nl.joozd.joozdter.data.JoozdterPrefs
+import nl.joozd.joozdter.calendar.CalendarRepository
+import nl.joozd.joozdter.data.sharedPrefs.JoozdterPrefs
+import nl.joozd.joozdter.data.sharedPrefs.SharedPreferenceDelegate
 import nl.joozd.joozdter.ui.utils.JoozdterViewModel
-import nl.joozd.joozdter.workers.JoozdterWorkersHub
 
 class MainActivityViewModel: JoozdterViewModel() {
     /**
      * Observables:
      */
 
-    private val _pickedCalendar = MutableLiveData<CalendarDescriptor>()
-    val pickedCalendar: LiveData<CalendarDescriptor>
-        get() = _pickedCalendar
+    private val calendarRepository = CalendarRepository()
 
-    private val _calendarName = MediatorLiveData<String>().apply{
-        JoozdterPrefs.pickedCalendar?.let { value = it }
-        addSource(pickedCalendar){
-            it?.let{ cd ->
-                value = cd.name
-            }
-        }
+    val foundCalendarsFlow get() = calendarRepository.calendarsFlow
+
+    private val _messagesFlow = MutableStateFlow<String?>(null)
+    val messagesFlow: StateFlow<String?> get() = _messagesFlow
+
+    val pickedCalendarFlow = combine(foundCalendarsFlow, JoozdterPrefs.pickedCalendar.flow){ cals, name ->
+        cals.firstOrNull{it.displayName == name}
     }
-    val calendarName: LiveData<String>
-        get() = _calendarName
-
-    private val _foundCalendars = MutableLiveData(emptyList<CalendarDescriptor>())
-    val foundCalendars: LiveData<List<CalendarDescriptor>>
-        get() = _foundCalendars
 
     //Checkboxes should observe these:
-    private val _leave = MutableLiveData(JoozdterPrefs.leave)
-    private val _taxi = MutableLiveData(JoozdterPrefs.taxi)
-    private val _checkIn = MutableLiveData(JoozdterPrefs.checkIn)
-    private val _checkOut = MutableLiveData(JoozdterPrefs.checkOut)
-    private val _flight = MutableLiveData(JoozdterPrefs.flight)
-    private val _hotel = MutableLiveData(JoozdterPrefs.hotel)
-    private val _standby = MutableLiveData(JoozdterPrefs.standby)
-    private val _simulator = MutableLiveData(JoozdterPrefs.simulator)
-    private val _actualSimulator = MutableLiveData(JoozdterPrefs.actualSimulator)
-    private val _other = MutableLiveData(JoozdterPrefs.other)
+    val leaveFlow get() = JoozdterPrefs.leave.flow
+    val taxiFlow get() = JoozdterPrefs.taxi.flow
+    val checkInFlow get() = JoozdterPrefs.checkIn.flow
+    val checkOutFlow get() = JoozdterPrefs.checkOut.flow
+    val flightFlow get() = JoozdterPrefs.flight.flow
+    val hotelFlow get() = JoozdterPrefs.hotel.flow
+    val standbyFlow get() = JoozdterPrefs.standby.flow
+    val trainingFlow get() = JoozdterPrefs.training.flow
+    val simulatorFlow get() = JoozdterPrefs.simulator.flow
+    val otherDutyFlow get() = JoozdterPrefs.otherDuty.flow
 
     /**
      * Functions to be called by onClickListeners
      */
 
     fun daysOffswitchClicked() {
-        JoozdterPrefs.leave = !JoozdterPrefs.leave
+        JoozdterPrefs.leave.toggle()
     }
     fun taxiSwitchClicked(){
-        JoozdterPrefs.taxi = !JoozdterPrefs.taxi
+        JoozdterPrefs.taxi.toggle()
     }
     fun checkInSwitchClicked(){
-        JoozdterPrefs.checkIn = !JoozdterPrefs.checkIn
-    }
-    fun checkOutSwitchClicked(){
-        JoozdterPrefs.checkOut = !JoozdterPrefs.checkOut
-    }
-    fun flightsSwitchClicked(){
-        JoozdterPrefs.flight = !JoozdterPrefs.flight
-    }
-    fun hotelSwitchClicked(){
-        JoozdterPrefs.hotel = !JoozdterPrefs.hotel
-    }
-    fun standbySwitchClicked(){
-        JoozdterPrefs.standby = !JoozdterPrefs.standby
-    }
-    fun simBriefingSwitchClicked(){
-        JoozdterPrefs.simulator = !JoozdterPrefs.simulator
-    }
-    fun simActualSwitchClicked(){
-        JoozdterPrefs.actualSimulator = !JoozdterPrefs.actualSimulator
-    }
-    fun otherSwitchClicked(){
-        JoozdterPrefs.other = !JoozdterPrefs.other
-    }
-
-    val leave: LiveData<Boolean>
-        get() = _leave
-    val taxi: LiveData<Boolean>
-        get() = _taxi
-    val checkIn: LiveData<Boolean>
-        get() = _checkIn
-    val checkOut: LiveData<Boolean>
-        get() = _checkOut
-    val flight: LiveData<Boolean>
-        get() = _flight
-    val hotel: LiveData<Boolean>
-        get() = _hotel
-    val standby: LiveData<Boolean>
-        get() = _standby
-    val simulator: LiveData<Boolean>
-        get() = _simulator
-    val actualSimulator: LiveData<Boolean>
-        get() = _actualSimulator
-    val other: LiveData<Boolean>
-        get() = _other
-
-    private val onSharedPrefsChangedListener =  SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        when (key) {
-            JoozdterPrefs::pickedCalendar.name -> _calendarName.value = JoozdterPrefs.pickedCalendar
-
-            JoozdterPrefs::leave.name -> _leave.value = JoozdterPrefs.leave
-            JoozdterPrefs::taxi.name -> _taxi.value = JoozdterPrefs.taxi
-            JoozdterPrefs::checkIn.name -> _checkIn.value = JoozdterPrefs.checkIn
-            JoozdterPrefs::checkOut.name -> _checkOut.value = JoozdterPrefs.checkOut
-            JoozdterPrefs::flight.name -> _flight.value = JoozdterPrefs.flight
-            JoozdterPrefs::hotel.name -> _hotel.value = JoozdterPrefs.hotel
-            JoozdterPrefs::standby.name -> _standby.value = JoozdterPrefs.standby
-            JoozdterPrefs::simulator.name -> _simulator.value = JoozdterPrefs.simulator
-            JoozdterPrefs::actualSimulator.name -> _actualSimulator.value = JoozdterPrefs.actualSimulator
-            JoozdterPrefs::other.name -> _other.value = JoozdterPrefs.other
+        viewModelScope.launch {
+            val checkinWasChecked = JoozdterPrefs.checkIn()
+            if (checkinWasChecked) _messagesFlow.value = "Make sure to check emailed roster for notes, as they are usually added to CheckIn activity"
+            JoozdterPrefs.checkIn.toggle()
         }
     }
-    init{
-        JoozdterPrefs.sharedPrefs.registerOnSharedPreferenceChangeListener (onSharedPrefsChangedListener)
+    fun checkOutSwitchClicked(){
+        JoozdterPrefs.checkOut.toggle()
+    }
+    fun flightsSwitchClicked(){
+        JoozdterPrefs.flight.toggle()
+    }
+    fun hotelSwitchClicked(){
+        JoozdterPrefs.hotel.toggle()
+    }
+    fun standbySwitchClicked(){
+        JoozdterPrefs.standby.toggle()
+    }
+    fun simBriefingSwitchClicked(){
+        JoozdterPrefs.training.toggle()
+    }
+    fun simActualSwitchClicked(){
+        JoozdterPrefs.simulator.toggle()
+    }
+    fun otherSwitchClicked(){
+        JoozdterPrefs.otherDuty.toggle()
     }
 
     fun fillCalendarsList() = viewModelScope.launch {
         if (!App.instance.checkCalendarWritePermission()) return@launch
-        _foundCalendars.postValue(CalendarHandler().getCalendars())
+        else calendarRepository.updateCalendarsList()
     }
 
-    fun getCalendar(calendar: CalendarDescriptor){
-        _pickedCalendar.value = calendar
-        JoozdterPrefs.pickedCalendar = calendar.name
-        JoozdterWorkersHub.changeCalendar(calendar)
+    @RequiresPermission(Manifest.permission.READ_CALENDAR)
+    fun setCalendar(calendar: CalendarDescriptor, context: Context) {
+        viewModelScope.launch {
+            val oldCalendar = foundCalendarsFlow.value.firstOrNull { it.displayName == JoozdterPrefs.pickedCalendar() }
+            // select picked calendar
+            JoozdterPrefs.pickedCalendar(calendar.displayName)
+
+            // If allowed (should be allowed), move flights from old to new calendar.
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED)
+                calendarRepository.switchCalendars(oldCalendar, calendar)
+        }
+    }
+
+    fun messageShown(){
+        _messagesFlow.value = null
+    }
+
+    private fun SharedPreferenceDelegate.Pref<Boolean>.toggle(){
+        val pref = this
+        viewModelScope.launch {
+            pref(!pref())
+        }
     }
 }
