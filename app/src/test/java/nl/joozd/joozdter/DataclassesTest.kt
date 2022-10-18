@@ -18,13 +18,12 @@ class DataclassesTest {
 
         val days = RosterParser(pages).parse()
         require(days != null) { "days is null. Test failed."}
-        val events = days.map{ it.events}.flatten()
     }
 
     @Test
     fun testEventTypes(){
         val he = HotelEvent("naam", Instant.now(), Instant.now().plusSeconds(600), "test") as Event
-        val fe = Event("iets", EventTypes.FLIGHT, Instant.now(), Instant.now().plusSeconds(600), "andere test") as Event
+        val fe = Event("iets", EventTypes.FLIGHT, Instant.now(), Instant.now().plusSeconds(600), "andere test")
         val cie = CheckinEvent("iets", Instant.now(), Instant.now().plusSeconds(600), "andere test") as Event
         val coe = CheckOutEvent("iets", Instant.now(), Instant.now().plusSeconds(600), "andere test") as Event
         val pue = PickupEvent("iets", Instant.now(), Instant.now().plusSeconds(600), "andere test") as Event
@@ -40,6 +39,5 @@ class DataclassesTest {
         }
         val list = buildList(he, fe, cie, coe, pue)
         assert(list.filterIsInstance<CompleteableEvent>().size == 4)
-        println("done")
     }
 }

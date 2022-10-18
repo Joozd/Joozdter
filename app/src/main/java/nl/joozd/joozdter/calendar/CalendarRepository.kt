@@ -22,7 +22,7 @@ import nl.joozd.joozdter.data.room.RoomEvent
 import nl.joozd.joozdter.data.utils.getPickedCalendarFromList
 import nl.joozd.joozdter.exceptions.NoCalendarSelectedException
 import nl.joozd.joozdter.exceptions.NotARosterException
-import nl.joozd.joozdter.model.filterEvents
+import nl.joozd.joozdter.data.events.filterEvents
 import nl.joozd.joozdter.utils.extensions.atEndOfDay
 import java.time.Instant
 import java.time.ZoneOffset
@@ -74,20 +74,27 @@ class CalendarRepository(val context:Context = App.instance) {
      *
      * Every one of these actions should also update EventsDatabase.
      */
-    @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
+    @RequiresPermission(allOf = [Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR])
     suspend fun mergeRosterDaysIntoCalendar(days: List<Day>){
+        if (selectedCalendar == null)
+            updateCalendarsList()
+        if (selectedCalendar == null) throw(NoCalendarSelectedException("No calendar selected"))
         val period = getPeriodFromDays(days) ?: throw(NotARosterException("Empty list of days passed to CalendarRepository"))
         val eventsInDB = getEventsFromDb(period)
         val wantedEventsInDays = filterEvents(days.map { it.events }.flatten())
 
         val eventsToBeDeleted = eventsInDB.filter { dbEvent -> dbEvent !in wantedEventsInDays.toRoomEvents() } // RoomEvent
-        deleteEvents(eventsToBeDeleted) // runs async
+        val deleteJob = deleteEvents(eventsToBeDeleted) // runs async
 
         val eventsToBeLeftAlone = getKnownEvents(days, eventsInDB) // Event
-        checkEventsToBeLeftAlone(eventsToBeLeftAlone) // runs async
+        val checkExistingJob = checkEventsToBeLeftAlone(eventsToBeLeftAlone) // runs async
 
         val eventsToSave = wantedEventsInDays.filter { it !in eventsToBeLeftAlone }
         saveToCalendarAndDB(eventsToSave) // does not run async
+
+        // Return only after other jobs complete, so "completed" is reported correctly to user.
+        checkExistingJob.join()
+        deleteJob.join()
 
     }
 
@@ -103,11 +110,13 @@ class CalendarRepository(val context:Context = App.instance) {
     private suspend fun findEventInCalendar(event: Event): CalendarEvent? =
         EventsExtractor{
             fromCalendar(selectedCalendar ?: throw (NoCalendarSelectedException("No calendar selected in repository")))
-            startAtEpochMilli(event.startEpochMilli!!)
-            endAtEpochMilli(event.endEpochMilli!!)
+            startAtEpochMilli(event.startEpochMilli)
+            endAtEpochMilli(event.endEpochMilli)
         }
             .extract(context)
-            .firstOrNull { it.title == event.name }
+            .firstOrNull { it.title == event.name }.also{
+                println("Found $it")
+            }
 
 
     private fun List<Event>.toRoomEvents() =
@@ -127,24 +136,24 @@ class CalendarRepository(val context:Context = App.instance) {
 
     //Deletes events in it's own coroutine.
     @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
-    private fun deleteEvents(eventsToBeDeleted: List<RoomEvent>){
+    private fun deleteEvents(eventsToBeDeleted: List<RoomEvent>) =
         MainScope().launch {
             val calendarEvents = eventsToBeDeleted.mapNotNull { findEventInCalendar(it) }
             Log.d(this::class.simpleName, "Found ${calendarEvents.size} events to delete...")
             deleteEventsFromCalendar(calendarEvents)
         }
-    }
+
 
     // Checks events in it's own coroutine, adds missing ones.
     @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
-    private fun checkEventsToBeLeftAlone(eventsToBeLeftAlone: List<Event>){
+    private fun checkEventsToBeLeftAlone(eventsToBeLeftAlone: List<Event>) =
         MainScope().launch {
             val eventsInCalendar = eventsToBeLeftAlone.filter { findEventInCalendar(it) != null }
             val eventsNotInCalendar = eventsToBeLeftAlone.filter { it !in eventsInCalendar}
             deleteEventsFromDatabase(eventsNotInCalendar.map { it.toRoomEvent() })
             saveToCalendarAndDB(eventsNotInCalendar)
         }
-    }
+
 
     @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
     private suspend fun deleteEventsFromCalendar(
@@ -153,7 +162,6 @@ class CalendarRepository(val context:Context = App.instance) {
         eventsToDelete.forEach {
             it.delete(context)
         }
-        Unit
     }
 
     private suspend fun deleteEventsFromDatabase(
@@ -171,14 +179,17 @@ class CalendarRepository(val context:Context = App.instance) {
 
     @RequiresPermission(Manifest.permission.WRITE_CALENDAR)
     private suspend fun saveToCalendarAndDB(events: List<Event>){
-        events.map {it.toCalendarEvent()}.filterNotNull().forEach {
-            it.save(context, selectedCalendar)
+        events.map {it.toCalendarEvent()}.forEach {
+            it.save(context, selectedCalendar).also{
+                println("Saved to calendar: $it")
+            }
             saveEventToDb(it)
         }
     }
 
     private suspend fun saveEventToDb(event: CalendarEvent){
         eventsDao.insertEvents(RoomEvent(event))
+        println("Saved to DB: $event")
     }
 
 

@@ -26,7 +26,6 @@ class MainActivity : JoozdterActivity() {
     @SuppressLint("MissingPermission") // since the check is not missing...
     private val calendarPickerAdapter = CalendarPickerAdapter {
         if(checkReadWriteCalendarPermission()) {
-            println("Setting calendar to $it")
             viewModel.setCalendar(it, this)
         }
     }
@@ -125,7 +124,6 @@ class MainActivity : JoozdterActivity() {
 
     private fun ActivityMainBinding.observeFlows(){
         viewModel.foundCalendarsFlow.launchCollectWhileLifecycleStateStarted{
-            println("Found calendars: $it")
             calendarPickerAdapter.submitList(it)
         }
 

@@ -63,7 +63,7 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant,
             startEpochMillis = startEpochMilli,
             endEpochMillis = endEpochMilli,
             timeZone = "UTC",
-            allDay = type == EventTypes.ROUTE_DAY
+            allDay = type == EventTypes.ROUTE_DAY || type == EventTypes.LEAVE
         )
 
     /**
@@ -91,17 +91,6 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant,
         result = 31 * result + notes.hashCode()
         return result
     }
-/*
-    interface CompleteableEvent {
-        /**
-         * Complete the times of this event with the information from [today] or [nextDay]
-         * eg. the end time of a [HotelEvent] or [PickupEvent]
-         */
-        abstract fun completeTimes(today: Day, nextDay: Day?): Event
-    }
-
- */
-
 
     companion object {
         private const val FLIGHT_DAY_NAME = "Flight Day"
@@ -140,7 +129,6 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant,
 
             val constructorData = EventConstructorData(input, date, legend)
 
-            // println("DEBUG - $date - INPUT IS $input")
             return when {
                 input matches checkInRegex      -> CheckinEvent(constructorData)
                 input matches checkOutRegex     -> CheckOutEvent(constructorData)
@@ -153,9 +141,7 @@ open class Event(val name: String, val type: EventTypes, val startTime: Instant,
                 input matches trainingRegex     -> TrainingEvent(constructorData)
                 input matches standbyRegex      -> StandbyEvent(constructorData)
 
-
                 input matches pickupRegex       -> PickupEvent(constructorData)
-
 
                 else -> null.also { println("No event found in $input") }
             }

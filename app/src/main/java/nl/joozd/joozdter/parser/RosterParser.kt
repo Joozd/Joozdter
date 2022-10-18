@@ -1,11 +1,9 @@
 package nl.joozd.joozdter.parser
 
-import android.content.Context
-import android.net.Uri
 import nl.joozd.joozdter.data.Day
-import nl.joozd.joozdter.data.extensions.replaceWithValue
-import nl.joozd.joozdter.data.extensions.splitByRegex
-import nl.joozd.joozdter.data.extensions.words
+import nl.joozd.joozdter.utils.extensions.replaceWithValue
+import nl.joozd.joozdter.utils.extensions.splitByRegex
+import nl.joozd.joozdter.utils.extensions.words
 import nl.joozd.joozdter.data.utils.fixTimes
 import nl.joozd.joozdter.utils.InstantRange
 import java.time.LocalDate
@@ -239,12 +237,6 @@ class RosterParser(private val parsedPdf: List<String>) {
     }
 
     companion object{
-        /**
-         * Create a RosterParser object from a Uri
-         */
-        suspend fun ofUri(uri: Uri, context: Context): RosterParser? = PdfGrabber(context, uri).getText()?.let { RosterParser(it) }
-
-
         // This line is the beginning of roster info. It is on all pages with a roster on it, and not on pages without.
         private const val ROSTER_START = "date H duty R dep arr AC info date H duty R dep arr AC info date H duty R dep arr AC info"
         //This line marks the end of the roster info part. It only appears after the last entry.
@@ -254,6 +246,5 @@ class RosterParser(private val parsedPdf: List<String>) {
 
         private const val weekDay = "(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)"
         private const val month = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)"
-        private const val carrier = "DH/[A-Z]{2}|WA|KL"
     }
 }

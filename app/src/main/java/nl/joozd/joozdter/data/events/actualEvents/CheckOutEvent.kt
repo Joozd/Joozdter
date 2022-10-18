@@ -9,18 +9,17 @@ import nl.joozd.joozdter.data.events.getLastEventBefore
 import java.time.Instant
 
 class CheckOutEvent(name: String,
-                    startTime: Instant?,
+                    startTime: Instant,
                     endTime: Instant,
                     info: String = "",
                     notes: String = "",
                     id: Long? = null
 ): Event(name, EventTypes.CHECK_OUT, startTime, endTime, info, notes, id), CompleteableEvent {
     internal constructor(d: EventConstructorData) :
-            this(d.name(), null, d.checkOutTimeEnd())
-    internal constructor(e: Event): this (e.name, e.startTime, e.endTime!!, e.info, e.notes, e.id)
+            this(d.name(), d.checkOutTimeEnd().minusSeconds(30*60), d.checkOutTimeEnd())
 
     override fun completeTimes(today: Day, nextDay: Day?): Event {
-        val startTime: Instant? = today.getLastEventBefore(this.endTime!!)?.endTime
+        val startTime: Instant = today.getLastEventBefore(this.endTime)?.endTime
             ?: this.endTime.minusSeconds(STANDARD_DURATION)
         //if no startTime for checkout found it will be 30 minutes
         return this.copy(startTime = startTime)
@@ -31,14 +30,13 @@ class CheckOutEvent(name: String,
      */
     override fun copy(name: String,
                       type: EventTypes,
-                      startTime: Instant?,
-                      endTime: Instant?,
+                      startTime: Instant,
+                      endTime: Instant,
                       info: String,
                       notes: String,
                       id: Long?
     ): CheckOutEvent {
         require (type == this.type) { "Cannot copy a typed Event to another type"}
-        require (endTime != null) { "a CheckOutEvent must have an end time"}
         return CheckOutEvent(name, startTime, endTime, info, notes, id)
     }
 

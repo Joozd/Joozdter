@@ -1,8 +1,6 @@
 package nl.joozd.joozdter
 
-import nl.joozd.joozdter.data.extensions.splitByRegex
-import nl.joozd.joozdter.data.extensions.words
-import nl.joozd.joozdter.parser.RosterParser
+import nl.joozd.joozdter.utils.extensions.words
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalTime
@@ -16,7 +14,6 @@ class FunctionTest {
         val t = "0330"
         val lt = LocalTime.parse(t, timeFormatter)
         assertEquals(lt, LocalTime.of(3,30))
-        println("ok")
     }
 
     @Test
@@ -29,7 +26,6 @@ class FunctionTest {
                 "H4 AEMILIA HOTEL BOLOGNA, Bologna 0039 0513940311\n" +
                 "H5 Movenpick Hotel, Geneva 0041227171111"
         val hl = buildHotelsLegend(hotelsString)
-        println(hl)
         assert(hl.keys.size == 5)
     }
 
@@ -38,7 +34,7 @@ class FunctionTest {
     private fun buildHotelsLegend(hotelsString: String?): Map<String, String>{
         hotelsString?.takeIf { it.isNotEmpty() } ?: return emptyMap() // return empty map on empty or null string
         val hotelRegex = """H\d+\s.*""".toRegex()
-        var lines = LinkedList(hotelsString.lines())
+        val lines = LinkedList(hotelsString.lines())
         var currentLine = lines.pop()
         val hotelLines = ArrayList<String>()
 

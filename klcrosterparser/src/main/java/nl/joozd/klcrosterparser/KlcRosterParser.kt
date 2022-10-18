@@ -343,32 +343,31 @@ class KlcRosterParser(inputStream: InputStream) {
                             @Suppress("NAME_SHADOWING") val line = lines[0]
                             lines = lines.drop(1)
                             val words = line.trim().replace("\\s+".toRegex(), " ").split(" ").filter{it.isNotEmpty()}
-                            if (words.isEmpty()) continue
+                            if (words.isEmpty())
+                                continue
 
-                                //if (words[0][0].isUpperCase() && words[0][1].isDigit() && words[0].length == XXXX2) { // line is actual sim
-                                if (actualSimRegex matches words[0]) { // line is actual sim
-                                    @Suppress("NAME_SHADOWING") val relevantTimes =
-                                        words.drop(1).joinToString(" ").filter { it in "0123456789 " }.trim()
-                                            .replace("\\s+".toRegex(), " ").split(" ")
-                                            .map { it.toInt() }
-                                    @Suppress("NAME_SHADOWING") val startTime = LocalDateTime.of(
-                                        activeDate,
-                                        LocalTime.of(relevantTimes[0] / 100, relevantTimes[0] % 100)
-                                    ).atZone(ZoneOffset.UTC).toInstant()
-                                    @Suppress("NAME_SHADOWING") val endTime = LocalDateTime.of(
-                                        activeDate,
-                                        LocalTime.of(relevantTimes[1] / 100, relevantTimes[1] % 100)
-                                    ).atZone(ZoneOffset.UTC).toInstant()
-                                    todaysEvents.add(
-                                        KlcRosterEvent(Activities.ACTUALSIM, startTime, endTime, words[0], SIMULATOR_DUTY_STRING
-                                        )
+                            //if (words[0][0].isUpperCase() && words[0][1].isDigit() && words[0].length == XXXX2) { // line is actual sim
+                            if (actualSimRegex matches words[0]) { // line is actual sim
+                                @Suppress("NAME_SHADOWING") val relevantTimes =
+                                    words.drop(1).joinToString(" ").filter { it in "0123456789 " }.trim()
+                                        .replace("\\s+".toRegex(), " ").split(" ")
+                                        .map { it.toInt() }
+                                @Suppress("NAME_SHADOWING") val startTime = LocalDateTime.of(
+                                    activeDate,
+                                    LocalTime.of(relevantTimes[0] / 100, relevantTimes[0] % 100)
+                                ).atZone(ZoneOffset.UTC).toInstant()
+                                @Suppress("NAME_SHADOWING") val endTime = LocalDateTime.of(
+                                    activeDate,
+                                    LocalTime.of(relevantTimes[1] / 100, relevantTimes[1] % 100)
+                                ).atZone(ZoneOffset.UTC).toInstant()
+                                todaysEvents.add(
+                                    KlcRosterEvent(Activities.ACTUALSIM, startTime, endTime, words[0], SIMULATOR_DUTY_STRING
                                     )
-                                } else {
-                                    if (todaysExtraInfo.isNotEmpty()) todaysExtraInfo += "\n"
-                                    todaysExtraInfo += line
-                                }
-
-
+                                )
+                            } else {
+                                if (todaysExtraInfo.isNotEmpty()) todaysExtraInfo += "\n"
+                                todaysExtraInfo += line
+                            }
                         }
                     }
 
@@ -439,9 +438,7 @@ class KlcRosterParser(inputStream: InputStream) {
 
         private const val dayOffString = "LPFLC|LVEC|LVES|ALC|LFD|LXD|LVE|WTV|IFLC|SLGC|LCV|IGC"
         private const val standbyString = "RES[A-Z0-9]"
-        private const val extraString = "TCRM|TCRMI|TCUG"
         private const val otherDutyString = "MMCS|TCBT|TGC|TFIE|TBEXI|OE"
-        private const val singleLineActivityString = "$standbyString|Pick"
         private const val defaultCheckoutTimeInSeconds = 30*60L
 
 

@@ -34,26 +34,7 @@ class Day(val date: LocalDate, val events: List<Event>){
      */
     fun startOfDay(): Instant = getFirstEvent()?.startTime ?: standardStartTime()
 
-    /**
-     * Get only events that are not yet in [knownEvents]
-     */
-    fun relevantEvents(knownEvents: Collection<Event>): List<Event> =
-        events.filter { it !in knownEvents }
-
-    /**
-     * Return all events from [knownEvents] that are made obsolete by the data in this Day
-     */
-    fun getObsoleteEvents(knownEvents: Collection<Event>) =
-        knownEvents.filter { it.date() == date }
-            .filter {it !in events}
-
-
-
-
-
-
     override fun toString(): String = "Day: $date\nEvents:\n${events.joinToString("\n")}"
-
 
     /**
      * replace a CompleteableEvent by its version with completed times
@@ -125,7 +106,6 @@ class Day(val date: LocalDate, val events: List<Event>){
             val extraMessage = dayContentsString.getExtraMessage()
             val lines = dayContentsString.linesWithEvents(extraMessage)
             return parseLines(lines, date, legend)
-                .addEmptyEventsToNextEvent()    // Add texts like TLC or TSOD to the next event if it is not the main activity (these have null times and are not HOTEL)
                 .addDutyEvent()                 //add a DUTY event if a Checkin and Checkout event are present
                 .addExtraMessage(extraMessage)  // add extraMessage to relevant items
                 .addFdpInfo(dayContentsString)  // add fdp info as a note to relevant items
@@ -140,24 +120,6 @@ class Day(val date: LocalDate, val events: List<Event>){
          */
         private fun String.getExtraMessage(): String? {
             return extraMessageRegex.find(this)?.groupValues?.get(1)
-        }
-
-        /**
-         * Remove events that are a note, and add that note as note to the next event
-         * if there is any.
-         * (If there is none, just remove it)
-         */
-        private fun List<Event>.addEmptyEventsToNextEvent(): List<Event>{
-            val workingList = ArrayList(this)
-            filter { it.isANote() }.forEach{
-                    eventThatIsANote ->
-                val index = indexOf(eventThatIsANote)
-                workingList.remove(eventThatIsANote)
-                workingList.getOrNull(index)?.let{ e ->
-                    workingList[index] = e.copy(name = e.name + " * " + eventThatIsANote.name)
-                }
-            }
-            return workingList
         }
 
         private fun List<Event>.addDutyEvent(): List<Event>{
@@ -190,11 +152,6 @@ class Day(val date: LocalDate, val events: List<Event>){
                 this.map{ if (it in mainEvents) it.copy(notes = "$fdpString\n" + it.notes) else it}
             } ?: this
         }
-
-        /**
-         * Checks if this event is actually a note
-         */
-        private fun Event.isANote() = startTime == null && endTime == null && type !in listOf(HOTEL, ROUTE_DAY)
 
         /**
          * Parse lines into a [Day]

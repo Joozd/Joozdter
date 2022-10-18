@@ -14,15 +14,14 @@ import java.time.Instant
  * a HOTEL Event
  */
 class HotelEvent(name: String,
-                 startTime: Instant?,
-                 endTime: Instant?,
+                 startTime: Instant,
+                 endTime: Instant,
                  info: String = "",
                  notes: String = "",
                  id: Long? = null
 ): Event(name, EventTypes.HOTEL, startTime, endTime, info, notes, id), CompleteableEvent {
     internal constructor(constructorData: EventConstructorData) :
-            this(constructorData.name(), null, null, constructorData.hotelInfo())
-    internal constructor(e: Event): this (e.name, e.startTime, e.endTime, e.info, e.notes, e.id)
+            this(constructorData.name(), constructorData.dayStart(), constructorData.dayend(), constructorData.hotelInfo())
 
     override fun completeTimes(today: Day, nextDay: Day?): Event {
         val startTime: Instant = today.getLastTypedEvent(eventsBeforeHotel)?.endTime
@@ -36,8 +35,8 @@ class HotelEvent(name: String,
      */
     override fun copy(name: String,
                       type: EventTypes,
-                      startTime: Instant?,
-                      endTime: Instant?,
+                      startTime: Instant,
+                      endTime: Instant,
                       info: String,
                       notes: String,
                       id: Long?

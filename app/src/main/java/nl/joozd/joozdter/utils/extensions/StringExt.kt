@@ -1,8 +1,5 @@
-package nl.joozd.joozdter.data.extensions
+package nl.joozd.joozdter.utils.extensions
 
-fun String.escapeQuotes() = replace("\"", "\\\"")
-
-fun String.restoreEscapedQuotes() = replace ("\\\"", "\"" )
 
 /**
  * Replace all instances found from a regex with something else, keeping the first value of that regex
@@ -12,16 +9,12 @@ fun String.restoreEscapedQuotes() = replace ("\\\"", "\"" )
  */
 fun String.replaceWithValue(regex: Regex, newValue: (String) -> String): String{
     var result = this
-    val results = regex.findAll(this).forEach{
+    regex.findAll(this).forEach{
         val r = if (it.groupValues.size > 1) it.groupValues[1] else it.value
         result = result.replace (it.groupValues[0], newValue(r))
     }
     return result
 }
-
-fun String.splitByRegex(regex: String, includeRegexResult: Boolean): List<String> =
-    if (!includeRegexResult) split(regex)
-    else splitByRegex(regex.toRegex(), includeRegexResult)
 
 fun String.splitByRegex(re: Regex, includeRegexResult: Boolean): List<String>{
     if (!includeRegexResult) error("Only supports with include, use String.split() instead.")

@@ -1,4 +1,4 @@
-package nl.joozd.joozdter.model
+package nl.joozd.joozdter.data.events
 
 import nl.joozd.joozdter.data.EventTypes
 import nl.joozd.joozdter.data.sharedPrefs.JoozdterPrefs
@@ -7,7 +7,7 @@ import nl.joozd.joozdter.data.sharedPrefs.JoozdterPrefs
  * Filter [events] by preferences set in JoozdterPrefs
  */
 //TODO do this in a non-blocking way or suspended or something. Probably will be rewritten anyway.
-suspend fun filterEvents(events: List<nl.joozd.joozdter.data.events.Event>): List<nl.joozd.joozdter.data.events.Event>{
+suspend fun filterEvents(events: List<Event>): List<Event>{
     val allowedEvents = buildList {
         if (JoozdterPrefs.leave()) add(EventTypes.LEAVE)
         if (JoozdterPrefs.taxi()) add(EventTypes.PICK_UP)

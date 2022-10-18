@@ -53,13 +53,15 @@ class JoozdterPdfParserActivity : JoozdterActivity() {
         }
         viewModel.messageFlow.launchCollectWhileLifecycleStateStarted{ message ->
             message?.let {
-                alert(it){ viewModel.messageShown() }
+                if (it == PdfParserActivityViewModel2.NO_CALENDAR_SELECTED_ERROR)
+                    showNoCalendarPickedDialog()
+                else
+                    alert(it){ viewModel.messageShown() }
             }
         }
     }
 
     private fun ActivityPdfParserBinding.showProgress(progress: Progress){
-        println("Progress: $progress")
         updateBigNumber(when(progress){
             Progress.STARTED -> 5
             Progress.GOT_FILE -> 4

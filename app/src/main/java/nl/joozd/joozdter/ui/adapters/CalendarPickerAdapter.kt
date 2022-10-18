@@ -9,28 +9,23 @@ import androidx.recyclerview.widget.RecyclerView
 import nl.joozd.joozdcalendarapi.CalendarDescriptor
 import nl.joozd.joozdter.R
 import nl.joozd.joozdter.databinding.ItemCalendarPickerBinding
-import nl.joozd.joozdter.utils.extensions.ctx
 
 class CalendarPickerAdapter(private val itemSelected: (CalendarDescriptor) -> Unit): ListAdapter<CalendarDescriptor, CalendarPickerAdapter.ViewHolder>(
     DIFF_CALLBACK){
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.ctx).inflate(R.layout.item_calendar_picker, parent, false)
-        println("TOMATENSAP")
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_calendar_picker, parent, false)
         return ViewHolder(view, itemSelected)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        println("Binding position $position")
         holder.bindCalendar(getItem(position))
     }
 
     fun pickCalendar(calendar: CalendarDescriptor?){
-        println("Picking calendar $calendar")
         val oldPickedCalendar = pickedCalendar
         pickedCalendar = calendar
         currentList.indexOf(calendar).takeIf{it != -1}?.let {
-            println("changed $it" )
             notifyItemChanged(it)
         }
         currentList.indexOf(oldPickedCalendar).takeIf{it != -1}?.let { notifyItemChanged(it) }
@@ -41,12 +36,11 @@ class CalendarPickerAdapter(private val itemSelected: (CalendarDescriptor) -> Un
 
         fun bindCalendar(calendar: CalendarDescriptor) {
             with(ItemCalendarPickerBinding.bind(containerView)) {
-                println("Binding calendar ${calendar.displayName} to ${this@ViewHolder}")
                 with(calendar) {
                     calendarNameTextView.text = displayName
                     if (calendar == pickedCalendar) {
-                        itemBackground.setBackgroundColor(itemBackground.ctx.getColor(R.color.highlightPicked))
-                    } else itemBackground.setBackgroundColor(itemBackground.ctx.getColor(R.color.none))
+                        itemBackground.setBackgroundColor(itemBackground.context.getColor(R.color.highlightPicked))
+                    } else itemBackground.setBackgroundColor(itemBackground.context.getColor(R.color.none))
                     itemView.setOnClickListener {
                         itemSelected(this)
                     }

@@ -1,6 +1,6 @@
 package nl.joozd.joozdter.data.events
 
-import nl.joozd.joozdter.data.extensions.words
+import nl.joozd.joozdter.utils.extensions.words
 import nl.joozd.joozdter.utils.extensions.endInstant
 import nl.joozd.joozdter.utils.extensions.startInstant
 import java.time.Instant
@@ -54,14 +54,14 @@ internal class EventConstructorData(private val input: String, val date: LocalDa
     /**
      * Start time for TrainingEvent
      */
-    fun trainingTimeStart(): Instant? =
-        input.words().getOrNull(2)?.timeStringToInstant(date)
+    fun trainingTimeStart(): Instant =
+        input.words().getOrNull(2)?.timeStringToInstant(date) ?: Instant.EPOCH
 
     /**
      * End time for TrainingEvent.
      */
-    fun trainingTimeEnd(): Instant? =
-        input.words().getOrNull(3)?.timeStringToInstant(date)
+    fun trainingTimeEnd(): Instant =
+        input.words().getOrNull(3)?.timeStringToInstant(date)?: Instant.EPOCH
 
     /**
      * Start time for StandbyEvent
@@ -111,19 +111,19 @@ internal class EventConstructorData(private val input: String, val date: LocalDa
         clickResults!![2].timeStringToInstant(date)
 
     /**
-     * Start time for  [PickupEvent]
+     * Start time for a PickupEvent
      */
     fun pickupTimeStart() =
         pickupResults!![1].timeStringToInstant(date)
 
     /**
-     * start of [SimEvent]
+     * start of a SimEvent
      */
     fun simTimeStart() =
         simResults!![2].timeStringToInstant(date)
 
     /**
-     * End of [SimEvent]
+     * End of a SimEvent
      */
     fun simTimeEnd() =
         simResults!![3].timeStringToInstant(date)

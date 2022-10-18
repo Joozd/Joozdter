@@ -15,12 +15,6 @@ internal fun Day.getFirstEvent(): Event? =
     this.events.getFirstEvent()
 
 /**
- * Get last event of the day
- */
-internal fun Day.getLastEvent(): Event? =
-    this.events.getLastEvent()
-
-/**
  * Get first event of the day after a specific Instant
  * Null if none found.
  */
@@ -36,7 +30,7 @@ internal fun Day.getLastEventBefore(before: Instant) =
 
 /**
  * Get first event of a specific type.
- * If [earliest] is given, it will give the first after that.
+ * If [after] is given, it will give the first after that.
  */
 internal fun Day.getFirstTypedEvent(allowedTypes: Collection<EventTypes>,
                                                   after: Instant? = null): Event? =
@@ -44,7 +38,7 @@ internal fun Day.getFirstTypedEvent(allowedTypes: Collection<EventTypes>,
 
 /**
  * Get first event of a specific type.
- * If [earliest] is given, it will give the first after that.
+ * If [before] is given, it will give the last before that.
  */
 internal fun Day.getLastTypedEvent(allowedTypes: Collection<EventTypes>,
                                     before: Instant? = null): Event? =
@@ -55,24 +49,21 @@ internal fun Day.getLastTypedEvent(allowedTypes: Collection<EventTypes>,
  * Null if no event found.
  */
 internal fun Collection<Event>.getFirstEvent(): Event? =
-    this.onlyWithStartTime()
-        .getFirstEventFromEventsWithTimes()
+    this.getFirstEventFromEventsWithTimes()
 
 /**
  * Get last event (only endTime considered) from a Collection of Events
  * Null if no event found.
  */
 internal fun Collection<Event>.getLastEvent(): Event? =
-    this.onlyWithEndtime()
-        .getLastEventFromEventsWithTimes()
+    this.getLastEventFromEventsWithTimes()
 
 /**
  * Get first event after a specific Instant
  * Null if none found.
  */
 internal fun Collection<Event>.getFirstEventAfter(after: Instant): Event? =
-    this.onlyWithStartTime()
-        .filter{ it.startTime!! > after  }
+    this.filter{ it.startTime > after  }
         .getFirstEventFromEventsWithTimes()
 
 /**
@@ -80,8 +71,7 @@ internal fun Collection<Event>.getFirstEventAfter(after: Instant): Event? =
  * Null if none found.
  */
 internal fun Collection<Event>.getLastEventBefore(before: Instant): Event? =
-    this.onlyWithEndtime()
-        .filter{ it.endTime!! < before  }
+    this.filter{ it.endTime < before  }
         .getLastEventFromEventsWithTimes()
 
 /**
@@ -109,13 +99,7 @@ internal fun Collection<Event>.getLastTypedEvent(allowedTypes: Collection<EventT
 
 
 private fun Collection<Event>.getFirstEventFromEventsWithTimes(): Event? =
-    this.minByOrNull { it.startTime!! }
+    this.minByOrNull { it.startTime }
 
 private fun Collection<Event>.getLastEventFromEventsWithTimes(): Event? =
-    this.maxByOrNull { it.endTime!! }
-
-private fun Collection<Event>.onlyWithStartTime(): List<Event>
-    = filter { it.startTime != null }
-
-private fun Collection<Event>.onlyWithEndtime(): List<Event>
-        = filter { it.endTime != null }
+    this.maxByOrNull { it.endTime }

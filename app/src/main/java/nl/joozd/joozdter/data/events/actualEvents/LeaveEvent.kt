@@ -8,8 +8,8 @@ import nl.joozd.joozdter.data.events.MainEvent
 import java.time.Instant
 
 class LeaveEvent(name: String,
-                 startTime: Instant?,
-                 endTime: Instant?,
+                 startTime: Instant,
+                 endTime: Instant,
                  info: String = "",
                  notes: String = "",
                  id: Long? = null

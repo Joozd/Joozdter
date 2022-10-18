@@ -10,18 +10,17 @@ import java.time.Instant
 
 class PickupEvent(name: String,
                   startTime: Instant,
-                  endTime: Instant?,
+                  endTime: Instant,
                   info: String = "",
                   notes: String = "",
                   id: Long? = null
 ): Event(name, EventTypes.PICK_UP, startTime, endTime, info, notes, id), CompleteableEvent {
     internal constructor(d: EventConstructorData) :
-            this(FIXED_NAME, d.pickupTimeStart(), null)
-    internal constructor(e: Event): this (e.name, e.startTime!!, e.endTime, e.info, e.notes, e.id)
+            this(FIXED_NAME, d.pickupTimeStart(), d.pickupTimeStart().plusSeconds(30*60))
 
     override fun completeTimes(today: Day, nextDay: Day?): Event {
         val endTime: Instant = today.getFirstTypedEvent(eventsAfterPickup)?.startTime
-            ?: this.startTime!!.plusSeconds(STANDARD_DURATION)
+            ?: this.startTime.plusSeconds(STANDARD_DURATION)
         return this.copy(endTime = endTime)
     }
 
@@ -30,14 +29,13 @@ class PickupEvent(name: String,
      */
     override fun copy(name: String,
                       type: EventTypes,
-                      startTime: Instant?,
-                      endTime: Instant?,
+                      startTime: Instant,
+                      endTime: Instant,
                       info: String,
                       notes: String,
                       id: Long?
     ): PickupEvent {
         require (type == this.type) { "Cannot copy a typed Event to another type"}
-        require (startTime != null) { "a PickupEvent must have a start time"}
         return PickupEvent(name, startTime, endTime, info, notes, id)
     }
 
